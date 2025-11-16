@@ -1,397 +1,210 @@
-/* --------------------------------------------------
-   STORAGE KEYS
--------------------------------------------------- */
-const LS_CUSTOMERS = "cc_customers";
-const LS_TRANSACTIONS = "cc_transactions";
-
-/* --------------------------------------------------
-   LOAD / SAVE
--------------------------------------------------- */
-function loadCustomers() {
-  return JSON.parse(localStorage.getItem(LS_CUSTOMERS) || "[]");
+/* =====================================
+   STORAGE HELPERS
+===================================== */
+function load(key, fallback) {
+  try {
+    return JSON.parse(localStorage.getItem(key)) || fallback;
+  } catch {
+    return fallback;
+  }
 }
 
-function saveCustomers(list) {
-  localStorage.setItem(LS_CUSTOMERS, JSON.stringify(list));
+function save(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
 }
 
-function loadTransactions() {
-  return JSON.parse(localStorage.getItem(LS_TRANSACTIONS) || "[]");
+/* =====================================
+   GLOBAL DATA
+===================================== */
+let customers = load("cc_customers", []);
+let transactions = load("cc_transactions", []);
+
+/* =====================================
+   DOM ELEMENTS
+===================================== */
+const customerList = document.getElementById("customer-list");
+const rightDefault = document.getElementById("right-default");
+const rightContent = document.getElementById("right-content");
+
+const openAddBtn = document.getElementById("open-add");
+const quickAddBtn = document.getElementById("quick-add-customer");
+
+const topTotal = document.getElementById("top-total");
+const quickGive = document.getElementById("quick-give");
+const quickGet = document.getElementById("quick-get");
+
+const searchInput = document.getElementById("search");
+const sortSelect = document.getElementById("sortBy");
+
+/* =====================================
+   CORE FUNCTIONS
+===================================== */
+function calculateBalance(id) {
+  const userTx = transactions.filter(t => t.customerId === id);
+  let total = 0;
+  userTx.forEach(t => total += Number(t.amount));
+  return total; // positive = they owe you, negative = you owe them
 }
 
-function saveTransactions(list) {
-  localStorage.setItem(LS_TRANSACTIONS, JSON.stringify(list));
-}
-
-/* --------------------------------------------------
-   GLOBAL STATE
--------------------------------------------------- */
-let customers = loadCustomers();
-let transactions = loadTransactions();
-let selectedCustomerId = null;
-
-/* --------------------------------------------------
-   UTILS
--------------------------------------------------- */
-function uid() {
-  return Date.now() + "_" + Math.random().toString(16).slice(2);
-}
-
-function formatMoney(n) {
-  return "₹" + Number(n).toFixed(2);
-}
-
-function getCustomerBalance(id) {
-  let amount = 0;
-  transactions.forEach(t => {
-    if (t.customerId === id) amount += t.amount;
-  });
-  return amount;
-}
-
-/* --------------------------------------------------
-   RENDER MAIN LIST
--------------------------------------------------- */
-function renderCustomerList() {
-  const search = document.getElementById("search").value.toLowerCase();
-  const sortBy = document.getElementById("sortBy").value;
+function renderCustomers() {
+  const query = searchInput.value.toLowerCase();
 
   let list = [...customers];
 
+  // sorting
+  const mode = sortSelect.value;
+  if (mode === "nameAsc") list.sort((a,b)=>a.name.localeCompare(b.name));
+  else if (mode === "nameDesc") list.sort((a,b)=>b.name.localeCompare(a.name));
+  else if (mode === "balanceDesc") list.sort((a,b)=>calculateBalance(b.id)-calculateBalance(a.id));
+  else if (mode === "balanceAsc") list.sort((a,b)=>calculateBalance(a.id)-calculateBalance(b.id));
+  else if (mode === "recent") list.sort((a,b)=>b.updated - a.updated);
+
   // filter
-  if (search.trim() !== "") {
-    list = list.filter(c =>
-      c.name.toLowerCase().includes(search) ||
-      c.phone.toLowerCase().includes(search)
-    );
-  }
+  list = list.filter(c =>
+    c.name.toLowerCase().includes(query) ||
+    c.phone.includes(query)
+  );
 
-  // sort
-  list.sort((a, b) => {
-    const balA = getCustomerBalance(a.id);
-    const balB = getCustomerBalance(b.id);
-
-    switch (sortBy) {
-      case "balanceDesc": return balB - balA;
-      case "balanceAsc": return balA - balB;
-      case "nameAsc": return a.name.localeCompare(b.name);
-      case "nameDesc": return b.name.localeCompare(a.name);
-      default: return b.updatedAt - a.updatedAt;
-    }
-  });
-
-  const root = document.getElementById("customer-list");
-  root.innerHTML = "";
+  customerList.innerHTML = "";
 
   list.forEach(c => {
-    const div = document.createElement("div");
-    div.className = "list-item";
-    div.innerHTML = `
-      <div class="customer-name">${c.name}</div>
-      <div class="customer-phone">${c.phone}</div>
-      <div class="customer-balance">${formatMoney(getCustomerBalance(c.id))}</div>
+    const bal = calculateBalance(c.id);
+    const item = document.createElement("div");
+    item.className = "list-item";
+    item.innerHTML = `
+      <div>
+        <div class="name">${c.name}</div>
+        <div class="phone muted small">${c.phone}</div>
+      </div>
+      <div class="balance ${bal >= 0 ? "pos" : "neg"}">₹${bal.toFixed(2)}</div>
     `;
-    div.onclick = () => openCustomer(c.id);
-    root.appendChild(div);
+    item.onclick = () => openCustomer(c.id);
+    customerList.appendChild(item);
   });
 
   updateTotals();
 }
 
-/* --------------------------------------------------
-   TOTALS
--------------------------------------------------- */
 function updateTotals() {
-  let give = 0;
-  let get = 0;
+  let give = 0, get = 0;
 
   customers.forEach(c => {
-    const bal = getCustomerBalance(c.id);
-    if (bal < 0) give += Math.abs(bal);
-    else get += bal;
+    const bal = calculateBalance(c.id);
+    if (bal > 0) get += bal;
+    else give += Math.abs(bal);
   });
 
-  document.getElementById("quick-give").innerText = formatMoney(give);
-  document.getElementById("quick-get").innerText = formatMoney(get);
-
-  const net = get - give;
-  document.getElementById("top-total").innerText = formatMoney(net);
+  topTotal.textContent = `₹${(get - give).toFixed(2)}`;
+  quickGive.textContent = `₹${give.toFixed(2)}`;
+  quickGet.textContent = `₹${get.toFixed(2)}`;
 }
 
-/* --------------------------------------------------
-   ADD CUSTOMER
--------------------------------------------------- */
-function openAddForm() {
-  selectedCustomerId = null;
+/* =====================================
+   ADD CUSTOMER FORM
+===================================== */
+function openAddCustomerForm() {
+  rightDefault.style.display = "none";
+  rightContent.innerHTML = `
+    <h2>Add Customer</h2>
 
-  const right = document.getElementById("right-pane");
-  const content = document.getElementById("right-content");
-  const def = document.getElementById("right-default");
+    <div class="form">
+      <label>Name</label>
+      <input id="add-name" placeholder="Customer name">
 
-  def.style.display = "none";
-  content.innerHTML = `
-    <h3>Add Customer</h3>
-    <div class="divider"></div>
+      <label>Phone</label>
+      <input id="add-phone" placeholder="Phone number">
 
-    <div class="space-y">
-      <input id="add-name" placeholder="Customer name" class="input-field" />
-      <input id="add-phone" placeholder="Phone" class="input-field" />
-
-      <button id="save-new" class="btn-success">Save</button>
+      <button id="save-customer" class="btn primary" style="margin-top:12px">
+        Save Customer
+      </button>
     </div>
   `;
 
-  document.getElementById("save-new").onclick = () => {
-    const name = document.getElementById("add-name").value.trim();
-    const phone = document.getElementById("add-phone").value.trim();
-
-    if (!name) return alert("Name is required.");
-
-    const newCustomer = {
-      id: uid(),
-      name,
-      phone,
-      updatedAt: Date.now()
-    };
-
-    customers.push(newCustomer);
-    saveCustomers(customers);
-
-    renderCustomerList();
-    openCustomer(newCustomer.id);
-  };
+  document.getElementById("save-customer").onclick = saveCustomer;
 }
 
-/* --------------------------------------------------
+function saveCustomer() {
+  const name = document.getElementById("add-name").value.trim();
+  const phone = document.getElementById("add-phone").value.trim();
+
+  if (!name) return alert("Name required");
+
+  const newCustomer = {
+    id: Date.now().toString(),
+    name,
+    phone,
+    updated: Date.now(),
+  };
+
+  customers.push(newCustomer);
+  save("cc_customers", customers);
+
+  renderCustomers();
+  showDefaultRightPane();
+}
+
+/* =====================================
    OPEN CUSTOMER DETAILS
--------------------------------------------------- */
+===================================== */
 function openCustomer(id) {
-  selectedCustomerId = id;
+  const customer = customers.find(c => c.id === id);
+  const bal = calculateBalance(id);
 
-  const c = customers.find(x => x.id === id);
-  const list = transactions.filter(t => t.customerId === id);
+  rightDefault.style.display = "none";
 
-  const right = document.getElementById("right-content");
-  const def = document.getElementById("right-default");
-  def.style.display = "none";
+  rightContent.innerHTML = `
+    <h2>${customer.name}</h2>
+    <div class="muted">${customer.phone}</div>
 
-  right.innerHTML = `
-    <h3>${c.name}</h3>
-    <div class="small-muted">${c.phone}</div>
-    <div class="divider"></div>
+    <div class="balance-box">
+      <b>Balance:</b> ₹${bal.toFixed(2)}
+    </div>
 
-    <div style="font-weight:700;margin-bottom:10px">Balance: ${formatMoney(getCustomerBalance(id))}</div>
-
-    <button id="add-tx" class="btn primary">Add Transaction</button>
-    <button id="delete-customer" class="btn-plain" style="color:#c00">Delete Customer</button>
-
-    <div class="divider" style="margin-top:15px"></div>
-
-    <h4>Transactions</h4>
-    <div id="tx-list" class="space-y" style="margin-top:10px"></div>
-  `;
-
-  document.getElementById("add-tx").onclick = () => openAddTransaction(id);
-  document.getElementById("delete-customer").onclick = () => deleteCustomer(id);
-
-  renderTransactions(id);
-}
-
-/* --------------------------------------------------
-   RENDER TRANSACTIONS
--------------------------------------------------- */
-function renderTransactions(id) {
-  const root = document.getElementById("tx-list");
-  root.innerHTML = "";
-
-  const list = transactions.filter(t => t.customerId === id);
-
-  if (list.length === 0) {
-    root.innerHTML = `<div class="small-muted">No transactions yet.</div>`;
-    return;
-  }
-
-  list.sort((a, b) => b.time - a.time);
-
-  list.forEach(t => {
-    const div = document.createElement("div");
-    div.className = "card";
-    div.style.padding = "10px";
-    div.innerHTML = `
-      <div><strong>${t.amount > 0 ? "You Gave" : "You Got"}</strong></div>
-      <div>${formatMoney(Math.abs(t.amount))}</div>
-      <div class="small-muted">${new Date(t.time).toLocaleString()}</div>
-    `;
-    root.appendChild(div);
-  });
-}
-
-/* --------------------------------------------------
-   ADD TRANSACTION
--------------------------------------------------- */
-function openAddTransaction(customerId) {
-  const right = document.getElementById("right-content");
-  right.innerHTML = `
-    <h3>Add Transaction</h3>
-    <div class="divider"></div>
-
-    <div class="space-y">
-      <input id="tx-amount" type="number" placeholder="Amount" class="input-field" />
-
-      <select id="tx-type" class="input-field">
-        <option value="give">You Gave (negative)</option>
-        <option value="get">You Got (positive)</option>
-      </select>
-
-      <button id="save-tx" class="btn-success">Save</button>
+    <div style="margin-top:20px">
+      <button id="add-tx" class="btn primary">Add Transaction</button>
     </div>
   `;
 
-  document.getElementById("save-tx").onclick = () => {
-    let amt = Number(document.getElementById("tx-amount").value);
-    const type = document.getElementById("tx-type").value;
-
-    if (!amt) return alert("Amount required.");
-
-    amt = type === "give" ? -Math.abs(amt) : Math.abs(amt);
-
-    transactions.push({
-      id: uid(),
-      customerId,
-      amount: amt,
-      time: Date.now()
-    });
-
-    saveTransactions(transactions);
-
-    const c = customers.find(x => x.id === customerId);
-    c.updatedAt = Date.now();
-    saveCustomers(customers);
-
-    renderCustomerList();
-    openCustomer(customerId);
-  };
+  document.getElementById("add-tx").onclick = () => addTransaction(id);
 }
 
-/* --------------------------------------------------
-   DELETE CUSTOMER
--------------------------------------------------- */
-function deleteCustomer(id) {
-  if (!confirm("Delete this customer and all transactions?")) return;
+function addTransaction(id) {
+  const amount = Number(prompt("Enter amount (positive = they give you, negative = you give them):"));
+  if (!amount) return;
 
-  customers = customers.filter(c => c.id !== id);
-  transactions = transactions.filter(t => t.customerId !== id);
+  transactions.push({
+    customerId: id,
+    amount,
+    time: Date.now()
+  });
 
-  saveCustomers(customers);
-  saveTransactions(transactions);
+  save("cc_transactions", transactions);
 
-  selectedCustomerId = null;
-  document.getElementById("right-content").innerHTML = "";
-  document.getElementById("right-default").style.display = "block";
+  const c = customers.find(c => c.id === id);
+  c.updated = Date.now();
+  save("cc_customers", customers);
 
-  renderCustomerList();
+  openCustomer(id);
+  renderCustomers();
 }
 
-/* --------------------------------------------------
-   BACKUP / IMPORT JSON
--------------------------------------------------- */
-document.getElementById("export-json").onclick = () => {
-  const data = {
-    customers,
-    transactions
-  };
-  const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "credit_backup.json";
-  a.click();
-};
+/* =====================================
+   DEFAULT RIGHT PANEL
+===================================== */
+function showDefaultRightPane() {
+  rightContent.innerHTML = "";
+  rightDefault.style.display = "block";
+}
 
-document.getElementById("import-json-btn").onclick = () =>
-  document.getElementById("import-json-file").click();
+/* =====================================
+   EVENT LISTENERS
+===================================== */
+openAddBtn.onclick = openAddCustomerForm;
+quickAddBtn.onclick = openAddCustomerForm;
 
-document.getElementById("import-json-file").onchange = e => {
-  const file = e.target.files[0];
-  if (!file) return;
+searchInput.oninput = renderCustomers;
+sortSelect.onchange = renderCustomers;
 
-  const reader = new FileReader();
-  reader.onload = evt => {
-    try {
-      const data = JSON.parse(evt.target.result);
-      customers = data.customers || [];
-      transactions = data.transactions || [];
-
-      saveCustomers(customers);
-      saveTransactions(transactions);
-
-      renderCustomerList();
-      alert("Backup imported successfully.");
-    } catch {
-      alert("Invalid JSON file.");
-    }
-  };
-  reader.readAsText(file);
-};
-
-/* --------------------------------------------------
-   CSV EXPORT
--------------------------------------------------- */
-document.getElementById("export-customers-csv").onclick = () => {
-  let csv = "name,phone,balance\n";
-  customers.forEach(c => {
-    csv += `${c.name},${c.phone},${getCustomerBalance(c.id)}\n`;
-  });
-
-  const blob = new Blob([csv], { type: "text/csv" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "customers.csv";
-  a.click();
-};
-
-document.getElementById("export-csv-all").onclick = () => {
-  let csv = "customer,phone,amount,time\n";
-
-  transactions.forEach(t => {
-    const c = customers.find(x => x.id === t.customerId);
-    csv += `${c.name},${c.phone},${t.amount},${new Date(t.time).toISOString()}\n`;
-  });
-
-  const blob = new Blob([csv], { type: "text/csv" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "transactions.csv";
-  a.click();
-};
-
-/* --------------------------------------------------
-   CLEAR ALL DATA
--------------------------------------------------- */
-document.getElementById("clear-data").onclick = () => {
-  if (!confirm("Clear all customers and transactions?")) return;
-
-  customers = [];
-  transactions = [];
-
-  saveCustomers(customers);
-  saveTransactions(transactions);
-
-  renderCustomerList();
-  document.getElementById("right-default").style.display = "block";
-  document.getElementById("right-content").innerHTML = "";
-};
-
-/* --------------------------------------------------
-   EVENTS
--------------------------------------------------- */
-document.getElementById("search").oninput = renderCustomerList;
-document.getElementById("sortBy").onchange = renderCustomerList;
-document.getElementById("open-add").onclick = openAddForm;
-document.getElementById("quick-add-customer").onclick = openAddForm;
-document.getElementById("quick-export-all").onclick = () =>
-  document.getElementById("export-csv-all").click();
-
-/* --------------------------------------------------
-   INIT
--------------------------------------------------- */
-renderCustomerList();
+/* INITIAL RENDER */
+renderCustomers();
+showDefaultRightPane();
