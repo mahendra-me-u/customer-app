@@ -1,4 +1,3 @@
-## style.css
 main{margin-top:18px}
 
 
@@ -72,7 +71,3 @@ textarea{resize:vertical}
 /* ---------- FOOT ---------- */
 footer{margin-top:16px;text-align:center;color:var(--muted);font-size:13px}
 input[type="file"]{display:none}
-```
-
-
----
