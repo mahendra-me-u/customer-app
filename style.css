@@ -1,35 +1,4 @@
-/* ---------- BASE ---------- */
---shadow: 0 6px 18px rgba(16,24,40,0.06);
-font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-color-scheme: light;
-}
-*{box-sizing:border-box}
-html,body{height:100%;margin:0;background:var(--bg);color:#0f172a}
-a{color:inherit;text-decoration:none}
-button{font-family:inherit}
-.app{max-width:1100px;margin:20px auto;padding:16px}
-header{display:flex;justify-content:space-between;align-items:center;padding:18px;border-radius:12px;
-background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;box-shadow:var(--shadow)}
-h1{margin:0;font-size:20px}
-.subtitle{opacity:.9;font-size:13px;margin-top:4px}
-.top-actions{display:flex;gap:8px;align-items:center}
-.btn{background:transparent;border:0;padding:8px 12px;border-radius:10px;color:white;cursor:pointer;font-weight:600}
-.btn.primary{background:rgba(255,255,255,0.12)}
-.btn.icon{display:inline-flex;align-items:center;gap:8px}
-main{margin-top:18px}
-
-
-/* ---------- GRID & CARDS ---------- */
-.grid{display:grid;grid-template-columns:1fr 380px;gap:16px}
-@media (max-width:980px){ .grid{grid-template-columns:1fr} }
-
-
-.card{background:var(--card);border-radius:12px;padding:14px;border:1px solid var(--border);box-shadow:var(--shadow)}
-.muted{color:var(--muted)}
-.small{font-size:13px}
-.flex{display:flex;align-items:center}
-.space-y > * + *{margin-top:12px}
-.gap-8{gap:8px}
+## style.css
 .gap-12{gap:12px}
 .center{justify-content:center;align-items:center}
 .between{justify-content:space-between}
@@ -87,3 +56,7 @@ textarea{resize:vertical}
 /* ---------- FOOT ---------- */
 footer{margin-top:16px;text-align:center;color:var(--muted);font-size:13px}
 input[type="file"]{display:none}
+```
+
+
+---
