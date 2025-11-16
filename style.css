@@ -1,73 +1,233 @@
-main{margin-top:18px}
+/* ---------- RESET ---------- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+body {
+  background: #f5f5f5;
+  color: #222;
+  padding: 20px;
+}
+
+.app {
+  max-width: 1200px;
+  margin: auto;
+}
 
 
-/* ---------- GRID & CARDS ---------- */
-.grid{display:grid;grid-template-columns:1fr 380px;gap:16px}
-@media (max-width:980px){ .grid{grid-template-columns:1fr} }
+/* ---------- HEADER ---------- */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 20px;
+}
+
+header h1 {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #666;
+  margin-top: 4px;
+}
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.top-actions input[type="file"] {
+  display: none;
+}
 
 
-.card{background:var(--card);border-radius:12px;padding:14px;border:1px solid var(--border);box-shadow:var(--shadow)}
-.muted{color:var(--muted)}
-.small{font-size:13px}
-.flex{display:flex;align-items:center}
-.space-y > * + *{margin-top:12px}
-.gap-8{gap:8px}
-.gap-12{gap:12px}
-.center{justify-content:center;align-items:center}
-.between{justify-content:space-between}
+/* ---------- BUTTONS ---------- */
+
+button,
+.btn,
+.btn-plain,
+.btn-success {
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  border: none;
+}
+
+.btn {
+  background: #e0e0e0;
+}
+
+.btn.primary {
+  background: #0078ff;
+  color: white;
+}
+
+.btn-success {
+  background: #28a745;
+  color: white;
+}
+
+.btn-plain {
+  background: transparent;
+  color: #0078ff;
+  padding: 4px 6px;
+}
+
+button:hover,
+.btn:hover,
+.btn-success:hover {
+  opacity: 0.9;
+}
+
+
+/* ---------- GRID LAYOUT ---------- */
+.grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 850px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ---------- CARDS ---------- */
+.card {
+  background: white;
+  padding: 16px;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+}
+
+.space-y > * + * {
+  margin-top: 14px;
+}
 
 
 /* ---------- SEARCH ---------- */
-.search{position:relative}
-.search input{width:100%;padding:12px 12px 12px 40px;border-radius:10px;border:1px solid var(--border);font-size:14px}
-.search .icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.55}
+
+.search {
+  display: flex;
+  align-items: center;
+  background: #f0f0f0;
+  border-radius: 6px;
+  padding: 6px 10px;
+  gap: 6px;
+}
+
+.search input {
+  border: none;
+  outline: none;
+  flex: 1;
+  background: transparent;
+  font-size: 14px;
+}
+
+.icon {
+  color: #666;
+}
+
+
+/* ---------- CONTROLS ---------- */
+.controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-plain.small {
+  font-size: 13px;
+  padding: 3px 5px;
+}
 
 
 /* ---------- LIST ---------- */
-.list{display:flex;flex-direction:column;gap:10px}
-.item{display:flex;justify-content:space-between;align-items:flex-start;padding:12px;border-radius:10px;border:1px solid
-#f1f5f9;background:white;cursor:pointer}
-.item:hover{box-shadow:0 6px 18px rgba(0,0,0,0.04)}
-.item-left{display:flex;gap:12px;align-items:center}
-.avatar{width:48px;height:48px;border-radius:999px;background:linear-gradient(135deg,#eef2ff,#e0f2fe);display:flex;align-items:center;justify-content:center;font-weight:700;color:#0f172a}
-.item-title{font-weight:700}
-.item-sub{color:var(--muted);font-size:13px}
-.amount{font-weight:800}
-.amount.green{color:var(--green)}
-.amount.red{color:var(--red)}
-.tag{font-size:12px;color:var(--muted)}
 
-
-/* ---------- FORM ---------- */
-label{display:block;font-weight:600;margin-bottom:6px;font-size:13px}
-input[type="text"], input[type="tel"], input[type="number"], textarea, select {
-width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:14px;background:white;
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
-textarea{resize:vertical}
-.form-row{display:flex;gap:12px}
-@media (max-width:560px){ .form-row{flex-direction:column} }
+
+.list-item {
+  padding: 10px;
+  background: #fafafa;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  cursor: pointer;
+}
+
+.list-item:hover {
+  background: #f1f1f1;
+}
+
+.customer-name {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.customer-phone {
+  font-size: 13px;
+  color: #666;
+}
+
+.customer-balance {
+  font-size: 14px;
+  font-weight: 700;
+  color: #444;
+}
 
 
-.btn-plain{background:transparent;border:1px solid var(--border);padding:8px 10px;border-radius:8px;cursor:pointer}
-.btn-success{background:var(--green);color:white;border:0;padding:8px 12px;border-radius:8px;cursor:pointer}
-.btn-danger{background:var(--red);color:white;border:0;padding:8px 12px;border-radius:8px;cursor:pointer}
+/* ---------- RIGHT PANE ---------- */
+
+#right-pane {
+  min-height: 450px;
+}
+
+.divider {
+  height: 1px;
+  background: #ddd;
+  margin: 10px 0;
+}
 
 
-/* ---------- TRANSACTION ---------- */
-.tx{display:flex;justify-content:space-between;align-items:flex-start;padding:10px;border-radius:10px;border:1px solid
-#f2f6fb;background:white}
-.tx .meta{color:var(--muted);font-size:13px}
-.tx .note{color:#334155;font-size:14px}
-.empty{padding:36px;text-align:center;color:var(--muted)}
+/* ---------- MUTED TEXT ---------- */
+.muted {
+  color: #666;
+  font-size: 14px;
+}
+
+.small {
+  font-size: 13px;
+}
+
+.small-muted {
+  font-size: 12px;
+  color: #777;
+}
+
+.muted-block {
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 4px;
+}
 
 
-/* ---------- UTIL ---------- */
-.muted-block{color:var(--muted);font-size:13px}
-.controls{display:flex;gap:8px;flex-wrap:wrap}
-.small-muted{font-size:12px;color:var(--muted)}
-.divider{height:1px;background:#f3f4f6;margin:12px 0;border-radius:2px}
-
-
-/* ---------- FOOT ---------- */
-footer{margin-top:16px;text-align:center;color:var(--muted);font-size:13px}
-input[type="file"]{display:none}
+/* ---------- FOOTER ---------- */
+footer {
+  text-align: center;
+  color: #666;
+  margin-top: 30px;
+  font-size: 14px;
+}
