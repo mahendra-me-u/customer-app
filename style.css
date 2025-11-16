@@ -1,4 +1,4 @@
-/* ---------- RESET ---------- */
+/* ---------- RESET & BASE ---------- */
 * {
   margin: 0;
   padding: 0;
@@ -7,13 +7,14 @@
 }
 
 body {
-  background: #f5f5f5;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   color: #222;
   padding: 20px;
+  min-height: 100vh;
 }
 
 .app {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: auto;
 }
 
@@ -22,12 +23,24 @@ header {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
 }
 
-header h1 {
-  font-size: 28px;
+.header-left h1 {
+  font-size: 32px;
   font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #0078ff;
+}
+
+.header-left h1 i {
+  color: #28a745;
 }
 
 .subtitle {
@@ -39,11 +52,23 @@ header h1 {
 .top-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
-.top-actions input[type="file"] {
-  display: none;
+.net-balance {
+  background: #f8f9fa;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #0078ff;
+}
+
+.auth-controls {
+  display: flex;
+  gap: 8px;
 }
 
 /* ---------- BUTTONS ---------- */
@@ -51,17 +76,24 @@ button,
 .btn,
 .btn-plain,
 .btn-success,
-.btn-danger {
-  padding: 6px 12px;
-  border-radius: 6px;
+.btn-danger,
+.btn-primary,
+.select {
+  padding: 8px 16px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
   border: none;
-  transition: opacity 0.2s;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
 }
 
 .btn {
-  background: #e0e0e0;
+  background: #e9ecef;
+  color: #495057;
 }
 
 .btn.primary {
@@ -69,63 +101,125 @@ button,
   color: white;
 }
 
-.btn-success {
+.btn.success {
   background: #28a745;
   color: white;
 }
 
-.btn-danger {
+.btn.danger {
   background: #dc3545;
   color: white;
 }
 
-.btn-plain {
+.btn.plain {
   background: transparent;
   color: #0078ff;
-  padding: 4px 6px;
+  border: 1px solid #0078ff;
 }
 
-button:hover,
+.btn.plain:hover {
+  background: #0078ff;
+  color: white;
+}
+
 .btn:hover,
-.btn-success:hover,
-.btn-danger:hover,
-.btn-plain:hover {
-  opacity: 0.8;
+.btn.primary:hover,
+.btn.success:hover,
+.btn.danger:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.btn.tiny {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.select {
+  background: white;
+  border: 1px solid #ddd;
+  color: #495057;
+  cursor: pointer;
+}
+
+.select:focus {
+  outline: none;
+  border-color: #0078ff;
 }
 
 /* ---------- GRID LAYOUT ---------- */
 .grid {
   display: grid;
-  grid-template-columns: 1.2fr 1fr;
-  gap: 20px;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 24px;
 }
 
-@media (max-width: 850px) {
+@media (max-width: 900px) {
   .grid {
     grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  .top-actions {
+    justify-content: center;
+    flex-wrap: wrap;
   }
 }
 
 /* ---------- CARDS ---------- */
 .card {
   background: white;
-  padding: 16px;
-  border-radius: 10px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.full-height {
+  height: fit-content;
+  min-height: 500px;
 }
 
 .space-y > * + * {
-  margin-top: 14px;
+  margin-top: 16px;
 }
 
-/* ---------- SEARCH ---------- */
+/* ---------- SEARCH & CONTROLS ---------- */
+.flex {
+  display: flex;
+}
+
+.between {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.center {
+  justify-content: center;
+  align-items: center;
+}
+
+.search-section {
+  flex: 1;
+  margin-right: 12px;
+}
+
 .search {
   display: flex;
   align-items: center;
-  background: #f0f0f0;
-  border-radius: 6px;
-  padding: 6px 10px;
-  gap: 6px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px;
+  gap: 8px;
+  border: 1px solid #e9ecef;
+  transition: border-color 0.2s;
+}
+
+.search:focus-within {
+  border-color: #0078ff;
 }
 
 .search input {
@@ -137,138 +231,277 @@ button:hover,
 }
 
 .icon {
-  color: #666;
+  color: #6c757d;
+  width: 18px;
+  height: 18px;
 }
 
-/* ---------- CONTROLS ---------- */
 .controls {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
-.btn-plain.small {
-  font-size: 13px;
-  padding: 3px 5px;
+.import-csv-label {
+  position: relative;
+  cursor: pointer;
+}
+
+.import-csv-label input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
 }
 
 /* ---------- LIST ---------- */
+.customers-section .muted-block {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 .list-item {
-  padding: 10px;
-  background: #fafafa;
-  border-radius: 6px;
-  border: 1px solid #ddd;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
   cursor: pointer;
+  transition: all 0.2s;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .list-item:hover {
-  background: #f1f1f1;
+  background: #e9ecef;
+  transform: translateX(4px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .customer-name {
   font-size: 16px;
   font-weight: 600;
+  color: #222;
 }
 
 .customer-phone {
   font-size: 13px;
-  color: #666;
+  color: #6c757d;
+  margin-top: 2px;
 }
 
 .customer-balance {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
-  color: #444;
+  color: #0078ff;
 }
 
 .tag {
   font-size: 12px;
-  color: #666;
-  margin-top: 2px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #e9ecef;
+  color: #6c757d;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+/* ---------- TOTALS & UTILITIES ---------- */
+.totals-section {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.totals-section .muted-block {
+  color: rgba(255,255,255,0.8);
+}
+
+.total-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 700;
+  margin-top: 8px;
+}
+
+.give-icon {
+  color: #ff6b6b;
+}
+
+.get-icon {
+  color: #51cf66;
+}
+
+.utilities-section .controls {
+  margin-top: 12px;
+}
+
+.utilities-section .btn {
+  flex: 1;
+  justify-content: center;
 }
 
 /* ---------- RIGHT PANE ---------- */
-#right-pane {
-  min-height: 450px;
+.right-pane .card {
+  min-height: 500px;
+  display: flex;
+  flex-direction: column;
 }
 
-#right-content {
-  margin-top: 20px;
+.welcome-pane {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.welcome-header {
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.welcome-header i {
+  font-size: 48px;
+  color: #0078ff;
+}
+
+.detail-pane {
+  margin-top: 0;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .divider {
   height: 1px;
-  background: #ddd;
-  margin: 10px 0;
+  background: #e9ecef;
+  margin: 16px 0;
 }
 
 /* ---------- TRANSACTION UI ---------- */
 .tx {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 10px;
-  background: #fafafa;
-  border-radius: 6px;
-  border: 1px solid #eee;
+  align-items: flex-start;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #0078ff;
+  margin-bottom: 12px;
+  transition: all 0.2s;
+}
+
+.tx:hover {
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.tx .left {
+  flex: 1;
 }
 
 .amount {
   font-weight: bold;
-  font-size: 16px;
+  font-size: 18px;
+  margin-bottom: 4px;
 }
 
 .green { color: #28a745; }
 .red { color: #dc3545; }
 
 .note {
-  color: #666;
-  font-size: 13px;
-  margin-top: 4px;
+  color: #6c757d;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.tx-right {
+  text-align: right;
 }
 
 .date {
-  color: #888;
+  color: #6c757d;
   font-size: 12px;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
+}
+
+.tx-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.tx-actions button {
+  padding: 4px 8px;
+  font-size: 12px;
 }
 
 .empty {
   text-align: center;
-  color: #999;
+  color: #6c757d;
   font-style: italic;
-  padding: 20px;
+  padding: 40px 20px;
+  font-size: 16px;
 }
 
 /* ---------- FORMS ---------- */
-input, textarea {
+form input,
+form textarea,
+form select {
   width: 100%;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  margin-top: 4px;
-  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  margin-top: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s;
 }
 
-label {
+form input:focus,
+form textarea:focus,
+form select:focus {
+  outline: none;
+  border-color: #0078ff;
+}
+
+form label {
   display: block;
-  margin-top: 12px;
+  margin-top: 16px;
   font-weight: 600;
-  color: #555;
+  color: #495057;
+}
+
+form .form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  justify-content: flex-end;
+}
+
+.date-input {
+  position: relative;
+}
+
+.date-input i {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  pointer-events: none;
 }
 
 /* ---------- MUTED TEXT ---------- */
 .muted {
-  color: #666;
+  color: #6c757d;
   font-size: 14px;
 }
 
@@ -278,29 +511,33 @@ label {
 
 .small-muted {
   font-size: 12px;
-  color: #777;
+  color: #adb5bd;
 }
 
 .muted-block {
   font-size: 14px;
-  color: #555;
-  margin-bottom: 4px;
+  color: #495057;
+  margin-bottom: 8px;
 }
 
 /* ---------- FOOTER ---------- */
 footer {
   text-align: center;
-  color: #666;
-  margin-top: 30px;
+  color: #6c757d;
+  margin-top: 40px;
   font-size: 14px;
-}
-
-/* ---------- FLEX UTILS ---------- */
-.flex {
   display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
-.between {
-  justify-content: space-between;
-  align-items: center;
+/* ---------- RESPONSIVE ---------- */
+@media (max-width: 600px) {
+  body { padding: 10px; }
+  .controls { flex-direction: column; align-items: stretch; }
+  .btn { justify-content: center; }
+  .list-item { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .tx { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .tx-right { align-self: flex-end; }
 }
