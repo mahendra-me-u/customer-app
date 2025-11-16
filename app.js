@@ -17,6 +17,13 @@
 ----------------------------------------------------- */
 const firebaseConfig = {
   // <-- PASTE YOUR FIREBASE CONFIG HERE
+    apiKey: "AIzaSyD7Puh6XMuuwOPu3U2zOoUWMBwQW04Z2tw",
+  authDomain: "credit-app-f2c16.firebaseapp.com",
+  projectId: "credit-app-f2c16",
+  storageBucket: "credit-app-f2c16.firebasestorage.app",
+  messagingSenderId: "1057636057228",
+  appId: "1:1057636057228:web:9397f9a16b6d4925633ba9",
+  measurementId: "G-QZM0880S42"
 };
 
 /* ------------------ Initialize Firebase ------------- */
