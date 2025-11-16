@@ -1,4 +1,18 @@
 ## style.css
+main{margin-top:18px}
+
+
+/* ---------- GRID & CARDS ---------- */
+.grid{display:grid;grid-template-columns:1fr 380px;gap:16px}
+@media (max-width:980px){ .grid{grid-template-columns:1fr} }
+
+
+.card{background:var(--card);border-radius:12px;padding:14px;border:1px solid var(--border);box-shadow:var(--shadow)}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.flex{display:flex;align-items:center}
+.space-y > * + *{margin-top:12px}
+.gap-8{gap:8px}
 .gap-12{gap:12px}
 .center{justify-content:center;align-items:center}
 .between{justify-content:space-between}
@@ -12,7 +26,8 @@
 
 /* ---------- LIST ---------- */
 .list{display:flex;flex-direction:column;gap:10px}
-.item{display:flex;justify-content:space-between;align-items:flex-start;padding:12px;border-radius:10px;border:1px solid #f1f5f9;background:white;cursor:pointer}
+.item{display:flex;justify-content:space-between;align-items:flex-start;padding:12px;border-radius:10px;border:1px solid
+#f1f5f9;background:white;cursor:pointer}
 .item:hover{box-shadow:0 6px 18px rgba(0,0,0,0.04)}
 .item-left{display:flex;gap:12px;align-items:center}
 .avatar{width:48px;height:48px;border-radius:999px;background:linear-gradient(135deg,#eef2ff,#e0f2fe);display:flex;align-items:center;justify-content:center;font-weight:700;color:#0f172a}
@@ -40,7 +55,8 @@ textarea{resize:vertical}
 
 
 /* ---------- TRANSACTION ---------- */
-.tx{display:flex;justify-content:space-between;align-items:flex-start;padding:10px;border-radius:10px;border:1px solid #f2f6fb;background:white}
+.tx{display:flex;justify-content:space-between;align-items:flex-start;padding:10px;border-radius:10px;border:1px solid
+#f2f6fb;background:white}
 .tx .meta{color:var(--muted);font-size:13px}
 .tx .note{color:#334155;font-size:14px}
 .empty{padding:36px;text-align:center;color:var(--muted)}
