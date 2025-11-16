@@ -1,6 +1,3 @@
-## app.js
-
-```javascript
 /* =========================
    Credit Manager — Vanilla JS
    ========================= */
@@ -621,6 +618,5 @@ window.addEventListener('storage', () => {
 });
 
 window.CC = { customers, transactions, save, load, exportAllCSV, exportCustomerCSV, clearAll };
-```
 
 ---
