@@ -68,7 +68,6 @@ const importCsvInput = $('#import-csv');
 const exportCustomersCsvBtn = $('#export-customers-csv');
 const exportAllCsvBtn = $('#export-csv-all');
 const quickExportAllBtn = $('#quick-export-all');
-const clearDataBtn = $('#clear-data');
 const openAddBtn = $('#open-add');
 const quickAddCustomerBtn = $('#quick-add-customer');
 const quickAddCustomerHeaderBtn = $('#quick-add-customer-header');
@@ -603,13 +602,6 @@ exportAllCsvBtn.addEventListener('click', () => {
 });
 
 quickExportAllBtn.addEventListener('click', () => exportAllCsvBtn.click());
-
-clearDataBtn.addEventListener('click', () => {
-  if(!confirm('Clear local cache? This cannot be undone.')) return;
-  localCustomers = []; localTransactions = [];
-  saveLocal(LOCAL_CUSTOMERS, []); saveLocal(LOCAL_TRANSACTIONS, []);
-  renderFromLocalCache();
-});
 
 function downloadCSV(csv, filename) {
   const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
