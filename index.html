@@ -1,110 +1,101 @@
+## index.html
+
+
+```html
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Credit Manager — Pure JS (Normal CSS)</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Credit Manager — Pure JS (Normal CSS)</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="app">
-    <header>
-      <div>
-        <h1>Credit Manager</h1>
-        <div class="subtitle">Local customer & credit tracking — saved to your browser</div>
-      </div>
-      <div class="top-actions">
-        <div class="small-muted">Net: <span id="top-total">₹0.00</span></div>
-        <button id="export-json" class="btn primary">Export Backup</button>
-        <button id="import-json-btn" class="btn">Import Backup</button>
-        <input type="file" id="import-json-file" accept=".json" />
-        <button id="open-add" class="btn">+ Add Customer</button>
-      </div>
-    </header>
+<div class="app">
+<header>
+<div>
+<h1>Credit Manager</h1>
+<div class="subtitle">Local customer & credit tracking — saved to your browser</div>
+</div>
+<div class="top-actions">
+<div class="small-muted">Net: <span id="top-total">₹0.00</span></div>
+<button id="export-json" class="btn primary">Export Backup</button>
+<button id="import-json-btn" class="btn">Import Backup</button>
+<input type="file" id="import-json-file" accept=".json" />
+<button id="open-add" class="btn">+ Add Customer</button>
+</div>
+</header>
 
-    <main>
-      <div class="grid">
-        <!-- LEFT: main list -->
-        <div>
-          <div class="card space-y">
-            <div class="flex between">
-              <div style="flex:1;margin-right:12px">
-                <div class="search">
-                  <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="11" cy="11" r="6" stroke="currentColor" stroke-width="2"/></svg>
-                  <input id="search" placeholder="Search customers by name or phone" />
-                </div>
-              </div>
-              <div style="min-width:220px;">
-                <div class="controls">
-                  <select id="sortBy" class="btn-plain small">
-                    <option value="recent">Sort: Recent</option>
-                    <option value="balanceDesc">Highest Balance</option>
-                    <option value="balanceAsc">Lowest Balance</option>
-                    <option value="nameAsc">Name A–Z</option>
-                    <option value="nameDesc">Name Z–A</option>
-                  </select>
-                  <button id="export-csv-all" class="btn-plain small">Export CSV</button>
-                  <label class="btn-plain small" title="Import CSV">
-                    Import CSV <input id="import-csv" type="file" accept=".csv" />
-                  </label>
-                </div>
-              </div>
-            </div>
 
-            <div>
-              <div class="muted-block small">Customers</div>
-              <div id="customer-list" class="list" style="margin-top:12px"></div>
-            </div>
-          </div>
+<main>
+<div class="grid">
+<!-- LEFT: main list -->
+<div>
+<div class="card space-y">
+<div class="flex between">
+<div style="flex:1;margin-right:12px">
+<div class="search">
+<svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="11" cy="11" r="6" stroke="currentColor" stroke-width="2"/></svg>
+<input id="search" placeholder="Search customers by name or phone" />
+</div>
+</div>
+<div style="min-width:220px;">
+<div class="controls">
+<select id="sortBy" class="btn-plain small">
+<option value="recent">Sort: Recent</option>
+<option value="balanceDesc">Highest Balance</option>
+<option value="balanceAsc">Lowest Balance</option>
+<option value="nameAsc">Name A–Z</option>
+<option value="nameDesc">Name Z–A</option>
+</select>
+<button id="export-csv-all" class="btn-plain small">Export CSV</button>
+<label class="btn-plain small" title="Import CSV">
+Import CSV <input id="import-csv" type="file" accept=".csv" />
+</label>
+</div>
+</div>
+</div>
 
-          <div style="margin-top:12px" class="card">
-            <div class="flex between">
-              <div>
-                <div class="muted-block small">Quick Totals</div>
-                <div style="font-weight:700;font-size:18px">You'll Give: <span id="quick-give">₹0.00</span></div>
-                <div style="font-weight:700;font-size:18px;margin-top:6px">You'll Get: <span id="quick-get">₹0.00</span></div>
-              </div>
 
-              <div style="min-width:220px">
-                <div class="muted small">Backup & utilities</div>
-                <div style="margin-top:8px" class="controls">
-                  <button id="export-customers-csv" class="btn-plain">Customers CSV</button>
-                  <button id="clear-data" class="btn-plain">Clear All</button>
-                </div>
-                <div class="small-muted" style="margin-top:8px">LocalStorage keys: <code>cc_customers</code>, <code>cc_transactions</code></div>
-              </div>
-            </div>
-          </div>
-        </div>
+<div>
+<div class="muted-block small">Customers</div>
+<div id="customer-list" class="list" style="margin-top:12px"></div>
+</div>
+</div>
 
-        <!-- RIGHT: detail / add -->
-        <div>
-          <div id="right-pane" class="card">
-            <!-- default content -->
-            <div id="right-default" class="space-y">
-              <div class="muted small">Welcome</div>
-              <div style="font-weight:700">Select a customer to view details, or add a new customer.</div>
-              <div class="divider"></div>
-              <div>
-                <div class="muted small">Quick Actions</div>
-                <div style="margin-top:8px" class="controls">
-                  <button id="quick-add-customer" class="btn-success">Add Customer</button>
-                  <button id="quick-export-all" class="btn-plain">Export All CSV</button>
-                </div>
-              </div>
-            </div>
-            <!-- dynamic views injected here -->
-            <div id="right-content"></div>
-          </div>
-        </div>
-      </div>
 
-      <footer>
-        Built with plain HTML/CSS/JS • Data stays in your browser only
-      </footer>
-    </main>
-  </div>
+<div style="margin-top:12px" class="card">
+<div class="flex between">
+<div>
+<div class="muted-block small">Quick Totals</div>
+<div style="font-weight:700;font-size:18px">You'll Give: <span id="quick-give">₹0.00</span></div>
+<div style="font-weight:700;font-size:18px;margin-top:6px">You'll Get: <span id="quick-get">₹0.00</span></div>
+</div>
 
-  <script src="app.js"></script>
-</body>
-</html>
+
+<div style="min-width:220px">
+<div class="muted small">Backup & utilities</div>
+<div style="margin-top:8px" class="controls">
+<button id="export-customers-csv" class="btn-plain">Customers CSV</button>
+<button id="clear-data" class="btn-plain">Clear All</button>
+</div>
+<div class="small-muted" style="margin-top:8px">LocalStorage keys: <code>cc_customers</code>, <code>cc_transactions</code></div>
+</div>
+</div>
+</div>
+</div>
+
+
+<!-- RIGHT: detail / add -->
+<div>
+<div id="right-pane" class="card">
+<!-- default content -->
+<div id="right-default" class="space-y">
+<div class="muted small">Welcome</div>
+<div style="font-weight:700">Select a customer to view details, or add a new customer.</div>
+<div class="divider"></div>
+<div>
+<div class="muted small">Quick Actions</div>
+<div style="margin-top:8px" class="controls">
+<button id="quick-add-customer" class="btn-success">Add Customer</button>
+---
