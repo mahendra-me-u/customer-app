@@ -1,19 +1,8 @@
 /* ======================================================
    app.js
    Firebase Authentication (Email/Password) + Firestore
+   Enhanced with Date Picker for Transactions
    ====================================================== */
-/* ------------- CONFIG (REPLACE this) ---------------
-   Get this from Firebase Console -> Project settings -> Your apps (Web)
-   Example structure:
-   const firebaseConfig = {
-     apiKey: "AIza....",
-     authDomain: "your-project.firebaseapp.com",
-     projectId: "your-project-id",
-     storageBucket: "your-project-id.appspot.com",
-     messagingSenderId: "...",
-     appId: "1:...:web:..."
-   };
------------------------------------------------------ */
 const firebaseConfig = {
   apiKey: "AIzaSyD7Puh6XMuuwOPu3U2zOoUWMBwQW04Z2tw",
   authDomain: "credit-app-f2c16.firebaseapp.com",
@@ -23,30 +12,29 @@ const firebaseConfig = {
   appId: "1:1057636057228:web:9397f9a16b6d4925633ba9",
   measurementId: "G-QZM0880S42"
 };
-/* ------------------ Initialize Firebase ------------- */
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
-/* ------------------ Local state & helpers ------------ */
+
 let currentUser = null;
 let unsubCustomers = null;
 let unsubTransactions = null;
 const LOCAL_CUSTOMERS = 'cc_customers';
 const LOCAL_TRANSACTIONS = 'cc_transactions';
-/* ------------- Utility helpers ---------------------- */
+
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
 function fmtMoney(n){ return new Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:2 }).format(Number(n)||0); }
 function fmtDate(d){ 
   try { 
     if (d && typeof d === 'object' && d.toDate) d = d.toDate(); 
-    return new Date(d).toLocaleString(); 
+    return new Date(d).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); 
   } catch(e) { 
     return d; 
   } 
 }
 function saveLocal(key, v){ localStorage.setItem(key, JSON.stringify(v)); }
 function loadLocal(key, fallback){ try{return JSON.parse(localStorage.getItem(key))||fallback;}catch{return fallback;} }
-/* Debounce helper */
+
 function debounce(func, wait) {
   let timeout;
   return function executedFunction(...args) {
@@ -58,13 +46,12 @@ function debounce(func, wait) {
     timeout = setTimeout(later, wait);
   };
 }
-/* ------------- DOM refs ------------------------------ */
+
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
-/* auth elements */
+
 const btnShowLogin = $('#btn-show-login');
 const btnLogout = $('#btn-logout');
-/* data UI */
 const customerListEl = $('#customer-list');
 const rightDefault = $('#right-default');
 const rightContent = $('#right-content');
@@ -73,7 +60,7 @@ const sortEl = $('#sortBy');
 const topTotalEl = $('#top-total');
 const quickGiveEl = $('#quick-give');
 const quickGetEl = $('#quick-get');
-/* import/export elements */
+const customerCountEl = $('#customer-count');
 const importJsonFile = $('#import-json-file');
 const exportJsonBtn = $('#export-json');
 const importJsonBtnEl = $('#import-json-btn');
@@ -82,46 +69,48 @@ const exportCustomersCsvBtn = $('#export-customers-csv');
 const exportAllCsvBtn = $('#export-csv-all');
 const quickExportAllBtn = $('#quick-export-all');
 const clearDataBtn = $('#clear-data');
-/* quick add/open */
 const openAddBtn = $('#open-add');
 const quickAddCustomerBtn = $('#quick-add-customer');
-/* ------------- Local cache (used when logged out) ---- */
+const quickAddCustomerHeaderBtn = $('#quick-add-customer-header');
+
 let localCustomers = loadLocal(LOCAL_CUSTOMERS, []);
 let localTransactions = loadLocal(LOCAL_TRANSACTIONS, []);
-/* ------------- AUTH UI: show login modal (simple) ---- */
+
 btnShowLogin.addEventListener('click', () => showAuthUI());
-btnLogout.addEventListener('click', async () => {
-  await auth.signOut();
-});
-/* Show a simple auth UI inside right pane */
+btnLogout.addEventListener('click', async () => await auth.signOut());
+openAddBtn.addEventListener('click', () => showAddCustomerUI());
+quickAddCustomerBtn.addEventListener('click', () => showAddCustomerUI());
+quickAddCustomerHeaderBtn.addEventListener('click', () => showAddCustomerUI());
+
 function showAuthUI(){
   rightDefault.style.display = 'none';
   rightContent.innerHTML = `
-    <div>
+    <div class="auth-form">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <h3>Sign In / Sign Up</h3>
-        <button id="close-auth" class="btn-plain small">Close</button>
+        <h3><i class="fas fa-lock"></i> Sign In / Sign Up</h3>
+        <button id="close-auth" class="btn plain small">Close</button>
       </div>
-      <div style="margin-top:10px">
+      <div class="divider"></div>
+      <form>
         <label>Email</label>
-        <input id="auth-email" type="email" placeholder="you@example.com" />
+        <input id="auth-email" type="email" placeholder="you@example.com" required />
         <label style="margin-top:8px">Password</label>
-        <input id="auth-pass" type="password" placeholder="password" />
-        <div style="margin-top:10px;display:flex;gap:8px">
-          <button id="auth-signin" class="btn-success">Sign in</button>
-          <button id="auth-signup" class="btn-plain">Sign up</button>
+        <input id="auth-pass" type="password" placeholder="password" required minlength="6" />
+        <div style="margin-top:16px;display:flex;gap:12px">
+          <button type="button" id="auth-signin" class="btn success flex-1">Sign In</button>
+          <button type="button" id="auth-signup" class="btn plain flex-1">Sign Up</button>
         </div>
-        <div class="small-muted" style="margin-top:10px">
-          Signing up creates an account (email/password). Data will be synced to your account.
-        </div>
+      </form>
+      <div class="small-muted" style="margin-top:12px;text-align:center">
+        Signing up creates an account (email/password). Data will be synced to your account.
       </div>
     </div>
   `;
-  $('#close-auth').addEventListener('click', ()=> { rightContent.innerHTML=''; rightDefault.style.display=''; });
+  $('#close-auth').addEventListener('click', () => { rightContent.innerHTML=''; rightDefault.style.display=''; });
   $('#auth-signin').addEventListener('click', handleSignIn);
   $('#auth-signup').addEventListener('click', handleSignUp);
 }
-/* ------------- Auth actions -------------------------- */
+
 async function handleSignUp(){
   const email = $('#auth-email').value.trim();
   const pass = $('#auth-pass').value;
@@ -133,9 +122,10 @@ async function handleSignUp(){
     rightDefault.style.display = '';
     alert('Signup successful. Data will sync automatically.');
   }catch(e){
-    alert('Sign up error: '+ e.message);
+    alert('Sign up error: ' + e.message);
   }
 }
+
 async function handleSignIn(){
   const email = $('#auth-email').value.trim();
   const pass = $('#auth-pass').value;
@@ -145,10 +135,10 @@ async function handleSignIn(){
     rightContent.innerHTML = '';
     rightDefault.style.display = '';
   }catch(e){
-    alert('Sign in error: '+ e.message);
+    alert('Sign in error: ' + e.message);
   }
 }
-/* called once after signup to optionally create user doc */
+
 async function initializeUserInFirestore(uid){
   const userDoc = db.collection('users').doc(uid);
   const snap = await userDoc.get();
@@ -156,8 +146,7 @@ async function initializeUserInFirestore(uid){
     await userDoc.set({ createdAt: firebase.firestore.FieldValue.serverTimestamp() });
   }
 }
-/* ------------- SYNC logic --------------------------- */
-/* On auth state change: subscribe/unsubscribe */
+
 auth.onAuthStateChanged(async (user) => {
   currentUser = user || null;
   if(currentUser){
@@ -173,7 +162,7 @@ auth.onAuthStateChanged(async (user) => {
     renderFromLocalCache();
   }
 });
-/* subscribe to Firestore collections and setup realtime listeners */
+
 function subscribeToUserData(uid){
   if(unsubCustomers){ unsubCustomers(); unsubCustomers=null; }
   if(unsubTransactions){ unsubTransactions(); unsubTransactions=null; }
@@ -203,7 +192,7 @@ function subscribeToUserData(uid){
     renderCustomers(localCustomers);
   }, err => console.error('transactions snapshot error', err));
 }
-/* Merge local data to cloud on sign-in/signup */
+
 async function syncLocalToCloudAndReload(){
   if(!currentUser) return;
   const uid = currentUser.uid;
@@ -231,7 +220,7 @@ async function syncLocalToCloudAndReload(){
   saveLocal(LOCAL_CUSTOMERS, []);
   saveLocal(LOCAL_TRANSACTIONS, []);
 }
-/* ------------- CRUD ------------- */
+
 async function saveCustomerToCloud(customer){
   if(!currentUser) {
     if(!customer.id) customer.id = uid();
@@ -247,6 +236,7 @@ async function saveCustomerToCloud(customer){
   const createdAt = customer.createdAt ? firebase.firestore.Timestamp.fromDate(new Date(customer.createdAt)) : firebase.firestore.FieldValue.serverTimestamp();
   await docRef.set({ ...customer, createdAt }, { merge: true });
 }
+
 async function deleteCustomerCloud(customerId){
   if(!currentUser){
     localCustomers = localCustomers.filter(c => c.id !== customerId);
@@ -264,6 +254,7 @@ async function deleteCustomerCloud(customerId){
   txSnap.forEach(td => batch.delete(td.ref));
   await batch.commit();
 }
+
 async function saveTransactionToCloud(tx){
   if(!currentUser){
     if(!tx.id) tx.id = uid();
@@ -277,6 +268,7 @@ async function saveTransactionToCloud(tx){
   const createdAt = tx.createdAt ? firebase.firestore.Timestamp.fromDate(new Date(tx.createdAt)) : firebase.firestore.FieldValue.serverTimestamp();
   await docRef.set({ ...tx, createdAt });
 }
+
 async function deleteTransactionCloud(txId){
   if(!currentUser){
     localTransactions = localTransactions.filter(t => t.id !== txId);
@@ -286,7 +278,7 @@ async function deleteTransactionCloud(txId){
   }
   await db.collection('users').doc(currentUser.uid).collection('transactions').doc(txId).delete();
 }
-/* ------------- RENDER helpers ------------------------- */
+
 function computeBalances(customersArr, transactionsArr){
   const balances = {};
   for(const c of customersArr){ balances[c.id] = 0; }
@@ -297,6 +289,7 @@ function computeBalances(customersArr, transactionsArr){
   }
   return balances;
 }
+
 function renderCustomers(customersArr){
   const customersList = customersArr || loadLocal(LOCAL_CUSTOMERS, []);
   const transactionsList = currentUser ? localTransactions : loadLocal(LOCAL_TRANSACTIONS, []);
@@ -306,9 +299,8 @@ function renderCustomers(customersArr){
   let filtered = customersList.filter(c => 
     !q || (c.name || '').toLowerCase().includes(q) || (c.phone || '').includes(q)
   );
-  // Apply sorting
   const sortBy = sortEl.value || 'recent';
-  let displayList = filtered;
+  let displayList = filtered.slice();
   switch(sortBy) {
     case 'recent':
       displayList.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
@@ -326,24 +318,25 @@ function renderCustomers(customersArr){
       displayList.sort((a, b) => (b.name || '').localeCompare(a.name || ''));
       break;
   }
+  customerCountEl.textContent = displayList.length;
   displayList.forEach(c => {
     const item = document.createElement('div');
     item.className = 'list-item';
     const bal = balances[c.id] || 0;
+    const tagClass = bal > 0 ? 'get-tag' : bal < 0 ? 'give-tag' : 'settled-tag';
     item.innerHTML = `
-      <div style="flex:1">
+      <div class="left">
         <div class="customer-name">${c.name || ''}</div>
         <div class="customer-phone">${c.phone || ''}</div>
       </div>
-      <div style="text-align:right">
+      <div class="right">
         <div class="customer-balance">${fmtMoney(Math.abs(bal))}</div>
-        <div class="tag">${bal > 0 ? "You'll Get" : bal < 0 ? "You'll Give" : "Settled"}</div>
+        <div class="tag ${tagClass}">${bal > 0 ? "You'll Get" : bal < 0 ? "You'll Give" : "Settled"}</div>
       </div>
     `;
-    item.addEventListener('click', ()=> openCustomerUI(c, customersList, transactionsList));
+    item.addEventListener('click', () => openCustomerUI(c, customersList, transactionsList));
     customerListEl.appendChild(item);
   });
-  // totals
   const totals = { give:0, get:0 };
   Object.values(balances).forEach(v => {
     if(v > 0) totals.get += v;
@@ -353,102 +346,120 @@ function renderCustomers(customersArr){
   quickGetEl.textContent = fmtMoney(totals.get);
   topTotalEl.textContent = fmtMoney(totals.get - totals.give);
 }
+
 function renderFromLocalCache(){
   localCustomers = loadLocal(LOCAL_CUSTOMERS, []);
   localTransactions = loadLocal(LOCAL_TRANSACTIONS, []);
   renderCustomers(localCustomers);
 }
-/* ------------- UI: customer detail view --------------- */
+
 function openCustomerUI(customer, customersArr, transactionsArr){
   rightDefault.style.display = 'none';
   rightContent.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <div>
-        <h3>${customer.name}</h3>
-        <div class="muted small">${customer.phone || ''}</div>
-      </div>
-      <div>
-        <button id="back-btn" class="btn-plain small">← Back</button>
+    <div class="customer-header">
+      <div class="flex between">
+        <div>
+          <h3><i class="fas fa-user"></i> ${customer.name}</h3>
+          <div class="muted small">${customer.phone || ''}</div>
+          ${customer.address ? `<div class="address muted">${customer.address}</div>` : ''}
+        </div>
+        <button id="back-btn" class="btn plain small"><i class="fas fa-arrow-left"></i> Back</button>
       </div>
     </div>
     <div class="divider"></div>
-    <div id="cust-balance-block" style="margin-top:8px"></div>
-    <div style="margin-top:12px;display:flex;gap:8px">
-      <button id="btn-give" class="btn-success">You Gave</button>
-      <button id="btn-get" class="btn-plain">You Got</button>
-      <button id="btn-edit-cust" class="btn-plain">Edit</button>
-      <button id="btn-delete-cust" class="btn-danger">Delete</button>
+    <div id="cust-balance-block" class="balance-block"></div>
+    <div class="action-buttons flex wrap gap-8 margin-top-16">
+      <button id="btn-give" class="btn success"><i class="fas fa-arrow-down"></i> You Gave</button>
+      <button id="btn-get" class="btn plain"><i class="fas fa-arrow-up"></i> You Got</button>
+      <button id="btn-edit-cust" class="btn plain"><i class="fas fa-edit"></i> Edit</button>
+      <button id="btn-delete-cust" class="btn danger"><i class="fas fa-trash"></i> Delete</button>
     </div>
-    <div class="divider" style="margin-top:12px"></div>
-    <div id="tx-list" class="space-y"></div>
+    <div class="divider margin-top-16"></div>
+    <div class="transactions-section">
+      <div class="muted-block small">Transactions</div>
+      <div id="tx-list" class="space-y"></div>
+    </div>
   `;
-  $('#back-btn').addEventListener('click', ()=> { rightContent.innerHTML=''; rightDefault.style.display=''; });
-  $('#btn-give').addEventListener('click', ()=> showTxForm(customer, 'given'));
-  $('#btn-get').addEventListener('click', ()=> showTxForm(customer, 'received'));
-  $('#btn-edit-cust').addEventListener('click', ()=> showEditCustomerForm(customer));
-  $('#btn-delete-cust').addEventListener('click', async ()=> {
+  $('#back-btn').addEventListener('click', () => { rightContent.innerHTML=''; rightDefault.style.display=''; });
+  $('#btn-give').addEventListener('click', () => showTxForm(customer, 'given'));
+  $('#btn-get').addEventListener('click', () => showTxForm(customer, 'received'));
+  $('#btn-edit-cust').addEventListener('click', () => showEditCustomerForm(customer));
+  $('#btn-delete-cust').addEventListener('click', async () => {
     if(!confirm('Delete customer and their transactions?')) return;
     await deleteCustomerCloud(customer.id);
   });
-  // render balance and transactions
-  const custTx = transactionsArr.filter(t => t.customerId === customer.id).sort((a,b)=> new Date(b.date) - new Date(a.date));
+  const custTx = transactionsArr.filter(t => t.customerId === customer.id).sort((a,b) => new Date(b.date) - new Date(a.date));
   const bal = computeBalances([customer], custTx)[customer.id] || 0;
-  $('#cust-balance-block').innerHTML = `<div style="font-weight:700">Balance: ${fmtMoney(Math.abs(bal))} (${bal > 0 ? "You'll Get" : bal < 0 ? "You'll Give" : "Settled"})</div>`;
+  const balClass = bal > 0 ? 'get-balance' : bal < 0 ? 'give-balance' : 'settled-balance';
+  $('#cust-balance-block').innerHTML = `
+    <div class="balance-display ${balClass}">
+      <i class="fas fa-balance-scale"></i>
+      <span>Balance: ${fmtMoney(Math.abs(bal))}</span>
+      <span class="balance-label">(${bal > 0 ? "You'll Get" : bal < 0 ? "You'll Give" : "Settled"})</span>
+    </div>
+  `;
   const txListEl = $('#tx-list');
-  txListEl.innerHTML = custTx.length === 0 ? '<div class="empty">No transactions yet</div>' : '';
+  txListEl.innerHTML = custTx.length === 0 ? '<div class="empty"><i class="fas fa-inbox"></i> No transactions yet</div>' : '';
   custTx.forEach(t => {
     const el = document.createElement('div');
     el.className = 'tx';
+    const typeIcon = t.type === 'given' ? 'fas fa-arrow-down' : 'fas fa-arrow-up';
+    const typeClass = t.type === 'given' ? 'green' : 'red';
     el.innerHTML = `
-      <div>
-        <div class="${t.type==='given'?'amount green':'amount red'}">${t.type==='given'?'+':'-'} ${fmtMoney(t.amount)}</div>
+      <div class="left">
+        <div class="amount ${typeClass}">
+          <i class="${typeIcon}"></i> ${t.type === 'given' ? '+' : '-'} ${fmtMoney(t.amount)}
+        </div>
         <div class="note">${t.note || ''}</div>
       </div>
-      <div style="text-align:right">
+      <div class="tx-right">
         <div class="date">${fmtDate(t.date)}</div>
-        <div style="margin-top:6px">
-          <button class="btn-plain tx-edit" data-id="${t.id}">Edit</button>
-          <button class="btn-plain tx-delete" data-id="${t.id}">Delete</button>
+        <div class="tx-actions">
+          <button class="btn plain tiny edit-btn" data-id="${t.id}"><i class="fas fa-edit"></i> Edit</button>
+          <button class="btn danger tiny delete-btn" data-id="${t.id}"><i class="fas fa-trash"></i> Delete</button>
         </div>
       </div>
     `;
-    el.querySelector('.tx-delete').addEventListener('click', async (ev) => {
+    el.querySelector('.delete-btn').addEventListener('click', async (ev) => {
       ev.stopPropagation();
       if(!confirm('Delete transaction?')) return;
       await deleteTransactionCloud(t.id);
     });
-    el.querySelector('.tx-edit').addEventListener('click', (ev) => {
+    el.querySelector('.edit-btn').addEventListener('click', (ev) => {
       ev.stopPropagation();
       showEditTxForm(t);
     });
     txListEl.appendChild(el);
   });
 }
-/* ------------- UI: add/edit forms ------------------- */
+
 function showAddCustomerUI(prefill = {}){
   rightDefault.style.display = 'none';
   rightContent.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <h3>${prefill.id ? 'Edit Customer' : 'Add Customer'}</h3>
-      <button id="back-btn" class="btn-plain small">← Back</button>
-    </div>
-    <div class="divider"></div>
-    <div style="margin-top:8px">
-      <label>Name</label>
-      <input id="cust-name" value="${prefill.name || ''}" />
-      <label style="margin-top:8px">Phone</label>
-      <input id="cust-phone" value="${prefill.phone || ''}" />
-      <label style="margin-top:8px">Address</label>
-      <textarea id="cust-address">${prefill.address || ''}</textarea>
-      <div style="margin-top:10px">
-        <button id="save-cust" class="btn-success">${prefill.id ? 'Update' : 'Save'}</button>
-        <button id="cancel-cust" class="btn-plain">Cancel</button>
+    <div class="form-header">
+      <div class="flex between">
+        <h3><i class="fas fa-user-plus"></i> ${prefill.id ? 'Edit Customer' : 'Add Customer'}</h3>
+        <button id="back-btn" class="btn plain small"><i class="fas fa-arrow-left"></i> Back</button>
       </div>
     </div>
+    <div class="divider"></div>
+    <form class="customer-form">
+      <label>Name <span class="required">*</span></label>
+      <input id="cust-name" value="${prefill.name || ''}" required />
+      <label>Phone</label>
+      <input id="cust-phone" value="${prefill.phone || ''}" type="tel" />
+      <label>Address</label>
+      <textarea id="cust-address" rows="3">${prefill.address || ''}</textarea>
+      <div class="form-actions">
+        <button type="button" id="cancel-cust" class="btn plain">Cancel</button>
+        <button type="submit" id="save-cust" class="btn success">${prefill.id ? 'Update' : 'Save'}</button>
+      </div>
+    </form>
   `;
-  $('#back-btn').addEventListener('click', ()=> { rightContent.innerHTML=''; rightDefault.style.display=''; });
-  $('#cancel-cust').addEventListener('click', ()=> { rightContent.innerHTML=''; rightDefault.style.display=''; });
-  $('#save-cust').addEventListener('click', async ()=>{
+  $('#back-btn').addEventListener('click', () => { rightContent.innerHTML=''; rightDefault.style.display=''; });
+  $('#cancel-cust').addEventListener('click', () => { rightContent.innerHTML=''; rightDefault.style.display=''; });
+  $('.customer-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
     const name = $('#cust-name').value.trim();
     const phone = $('#cust-phone').value.trim();
     const address = $('#cust-address').value.trim();
@@ -459,51 +470,79 @@ function showAddCustomerUI(prefill = {}){
     rightDefault.style.display = '';
   });
 }
+
 function showEditCustomerForm(customer){
   showAddCustomerUI(customer);
 }
+
 function showTxForm(customer, type){
   const existingForm = $('#tx-form');
   if (existingForm) existingForm.remove();
-  rightContent.insertAdjacentHTML('beforeend', `
-    <div style="margin-top:12px" id="tx-form">
-      <label>Amount</label>
-      <input id="tx-amount" type="number" step="0.01" />
-      <label>Note</label>
-      <input id="tx-note" />
-      <div style="margin-top:8px">
-        <button id="save-tx" class="btn-success">Save</button>
-        <button id="cancel-tx" class="btn-plain">Cancel</button>
-      </div>
+  const typeLabel = type === 'given' ? 'You Gave' : 'You Got';
+  const typeIcon = type === 'given' ? 'fas fa-arrow-down' : 'fas fa-arrow-up';
+  const formHtml = `
+    <div id="tx-form" class="tx-form card">
+      <h4><i class="${typeIcon}"></i> Add ${typeLabel}</h4>
+      <form class="tx-form-inner">
+        <label>Amount <span class="required">*</span></label>
+        <input id="tx-amount" type="number" step="0.01" min="0.01" required />
+        <label>Date <span class="required">*</span></label>
+        <div class="date-input">
+          <input id="tx-date" type="date" required />
+          <i class="fas fa-calendar-alt"></i>
+        </div>
+        <label>Note</label>
+        <input id="tx-note" placeholder="Optional note" />
+        <div class="form-actions">
+          <button type="button" id="cancel-tx" class="btn plain">Cancel</button>
+          <button type="submit" class="btn success">Save Transaction</button>
+        </div>
+      </form>
     </div>
-  `);
-  $('#cancel-tx').addEventListener('click', ()=> { const f = $('#tx-form'); if(f) f.remove(); });
-  $('#save-tx').addEventListener('click', async ()=>{
+  `;
+  rightContent.insertAdjacentHTML('beforeend', formHtml);
+  const today = new Date().toISOString().split('T')[0];
+  $('#tx-date').value = today;
+  $('#cancel-tx').addEventListener('click', () => { const f = $('#tx-form'); if(f) f.remove(); });
+  $('.tx-form-inner').addEventListener('submit', async (e) => {
+    e.preventDefault();
     const amt = Number($('#tx-amount').value);
+    const date = $('#tx-date').value;
     const note = $('#tx-note').value.trim();
     if(!amt || amt <= 0){ alert('Enter valid amount'); return; }
-    const tx = { id: uid(), customerId: customer.id, amount: amt, type, note, date: new Date().toISOString() };
+    if(!date){ alert('Select a date'); return; }
+    const tx = { id: uid(), customerId: customer.id, amount: amt, type, note, date: new Date(date).toISOString() };
     await saveTransactionToCloud(tx);
     const form = $('#tx-form'); if(form) form.remove();
   });
 }
+
 function showEditTxForm(tx){
   const newNote = prompt('Edit note', tx.note || '');
   if(newNote === null) return;
-  const newAmt = prompt('Edit amount', tx.amount);
-  if(newAmt === null) return;
+  const newAmtStr = prompt('Edit amount', tx.amount);
+  if(newAmtStr === null) return;
+  const newAmt = Number(newAmtStr);
+  if(isNaN(newAmt) || newAmt <= 0){ alert('Invalid amount'); return; }
+  const newDateStr = prompt('Edit date (YYYY-MM-DD)', new Date(tx.date).toISOString().split('T')[0]);
+  if(newDateStr === null) return;
+  const newDate = new Date(newDateStr);
+  if(isNaN(newDate.getTime())){ alert('Invalid date'); return; }
   tx.note = newNote.trim();
-  tx.amount = Number(newAmt) || tx.amount;
+  tx.amount = newAmt;
+  tx.date = newDate.toISOString();
   saveTransactionToCloud(tx);
 }
-/* ------------- Import/Export JSON & CSV --------------- */
-exportJsonBtn.addEventListener('click', ()=>{
+
+exportJsonBtn.addEventListener('click', () => {
   const data = { customers: loadLocal(LOCAL_CUSTOMERS, []), transactions: loadLocal(LOCAL_TRANSACTIONS, []) };
   const blob = new Blob([JSON.stringify(data, null,2)], { type:'application/json' });
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'backup.json'; a.click();
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'credit-backup.json'; a.click();
 });
+
 importJsonBtnEl.addEventListener('click', () => importJsonFile.click());
-importJsonFile.addEventListener('change', async (e)=>{
+
+importJsonFile.addEventListener('change', async (e) => {
   const f = e.target.files[0];
   if(!f) return;
   const txt = await f.text();
@@ -515,11 +554,11 @@ importJsonFile.addEventListener('change', async (e)=>{
       const txCol = db.collection('users').doc(uid).collection('transactions');
       for(const c of obj.customers || []){ 
         const createdAt = c.createdAt ? firebase.firestore.Timestamp.fromDate(new Date(c.createdAt)) : firebase.firestore.FieldValue.serverTimestamp();
-        await custCol.doc(c.id || uid()).set({ ...c, createdAt }); 
+        await custCol.doc(c.id || uid()).set({ ...c, createdAt }, { merge: true }); 
       }
       for(const t of obj.transactions || []){ 
         const createdAt = t.createdAt ? firebase.firestore.Timestamp.fromDate(new Date(t.createdAt)) : firebase.firestore.FieldValue.serverTimestamp();
-        await txCol.doc(t.id || uid()).set({ ...t, createdAt }); 
+        await txCol.doc(t.id || uid()).set({ ...t, createdAt }, { merge: true }); 
       }
       alert('Imported to your cloud account.');
     } else {
@@ -533,23 +572,26 @@ importJsonFile.addEventListener('change', async (e)=>{
   }catch(err){ alert('Invalid JSON'); }
   e.target.value = '';
 });
-importCsvInput.addEventListener('change', (e)=> {
+
+importCsvInput.addEventListener('change', (e) => {
   const f = e.target.files[0];
   if(!f) return;
   const reader = new FileReader();
-  reader.onload = (ev)=> {
+  reader.onload = (ev) => {
     parseCSVImport(ev.target.result);
     e.target.value = '';
   };
   reader.readAsText(f);
 });
-exportCustomersCsvBtn.addEventListener('click', ()=>{
+
+exportCustomersCsvBtn.addEventListener('click', () => {
   const custs = loadLocal(LOCAL_CUSTOMERS, []);
   let out = 'id,name,phone,address,createdAt\n';
   for(const c of custs) out += `"${c.id}","${c.name}","${c.phone}","${c.address}","${c.createdAt}"\n`;
   downloadCSV(out, 'customers.csv');
 });
-exportAllCsvBtn.addEventListener('click', ()=>{
+
+exportAllCsvBtn.addEventListener('click', () => {
   const custs = loadLocal(LOCAL_CUSTOMERS, []);
   const txs = loadLocal(LOCAL_TRANSACTIONS, []);
   let out = 'custName,phone,amount,type,note,date\n';
@@ -559,18 +601,21 @@ exportAllCsvBtn.addEventListener('click', ()=>{
   }
   downloadCSV(out, 'transactions.csv');
 });
+
 quickExportAllBtn.addEventListener('click', () => exportAllCsvBtn.click());
-clearDataBtn.addEventListener('click', ()=>{
-  if(!confirm('Clear local cache?')) return;
+
+clearDataBtn.addEventListener('click', () => {
+  if(!confirm('Clear local cache? This cannot be undone.')) return;
   localCustomers = []; localTransactions = [];
   saveLocal(LOCAL_CUSTOMERS, []); saveLocal(LOCAL_TRANSACTIONS, []);
   renderFromLocalCache();
 });
+
 function downloadCSV(csv, filename) {
-  const blob = new Blob([csv], { type:'text/csv' });
+  const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click();
 }
-/* CSV parser */
+
 function parseCSVRow(str) {
   const result = [];
   let field = '';
@@ -586,6 +631,7 @@ function parseCSVRow(str) {
   result.push(field.replace(/^"|"$/g, ''));
   return result;
 }
+
 function parseCSVImport(text){
   const lines = text.split(/\r?\n/).filter(l => l.trim());
   if(lines.length < 1) { alert('Empty CSV'); return; }
@@ -594,7 +640,6 @@ function parseCSVImport(text){
   const headerLower = headers.map(h => h.toLowerCase());
   let imported = 0;
   if (headerLower.includes('name') && headerLower.includes('phone')) {
-    // Customers CSV
     rows.forEach(row => {
       const idIdx = headers.findIndex(h => h.toLowerCase() === 'id');
       const nameIdx = headers.findIndex(h => h.toLowerCase() === 'name');
@@ -615,7 +660,6 @@ function parseCSVImport(text){
     renderFromLocalCache();
     alert(`${imported} customers imported.`);
   } else if (headerLower.includes('custname') && headerLower.includes('amount') && headerLower.includes('type')) {
-    // Transactions CSV
     rows.forEach(row => {
       const custNameIdx = headers.findIndex(h => h.toLowerCase() === 'custname');
       const phoneIdx = headers.findIndex(h => h.toLowerCase() === 'phone');
@@ -648,12 +692,8 @@ function parseCSVImport(text){
     alert('CSV format not recognized. Use customers (name, phone, address) or transactions (custName, phone, amount, type, note, date).');
   }
 }
-/* ------------- init ------------- */
-openAddBtn.addEventListener('click', ()=> showAddCustomerUI());
-quickAddCustomerBtn.addEventListener('click', ()=> showAddCustomerUI());
+
 renderFromLocalCache();
-/* Attach search/sort events */
-searchEl.addEventListener('input', debounce(()=> renderCustomers(localCustomers), 300));
-sortEl.addEventListener('change', ()=> renderCustomers(localCustomers));
-/* listen for storage updates from other tabs */
-window.addEventListener('storage', ()=> renderFromLocalCache());
+searchEl.addEventListener('input', debounce(() => renderCustomers(localCustomers), 300));
+sortEl.addEventListener('change', () => renderCustomers(localCustomers));
+window.addEventListener('storage', () => renderFromLocalCache());
