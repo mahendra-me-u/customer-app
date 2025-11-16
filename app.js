@@ -105,7 +105,10 @@ function updateTotals() {
 function openAddCustomerForm() {
   rightDefault.style.display = "none";
   rightContent.innerHTML = `
-    <h2>Add Customer</h2>
+    <div class="flex between" style="margin-bottom:12px">
+      <h2>Add Customer</h2>
+      <button id="back-btn" class="btn-plain small">← Back</button>
+    </div>
 
     <div class="form">
       <label>Name</label>
@@ -121,6 +124,7 @@ function openAddCustomerForm() {
   `;
 
   document.getElementById("save-customer").onclick = saveCustomer;
+  document.getElementById("back-btn").onclick = showDefaultRightPane;
 }
 
 function saveCustomer() {
@@ -153,7 +157,11 @@ function openCustomer(id) {
   rightDefault.style.display = "none";
 
   rightContent.innerHTML = `
-    <h2>${customer.name}</h2>
+    <div class="flex between" style="margin-bottom:12px">
+      <h2>${customer.name}</h2>
+      <button id="back-btn" class="btn-plain small">← Back</button>
+    </div>
+
     <div class="muted">${customer.phone}</div>
 
     <div class="balance-box">
@@ -166,6 +174,7 @@ function openCustomer(id) {
   `;
 
   document.getElementById("add-tx").onclick = () => addTransaction(id);
+  document.getElementById("back-btn").onclick = showDefaultRightPane;
 }
 
 function addTransaction(id) {
