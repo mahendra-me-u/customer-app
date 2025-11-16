@@ -17,7 +17,6 @@ body {
   margin: auto;
 }
 
-
 /* ---------- HEADER ---------- */
 header {
   display: flex;
@@ -47,18 +46,18 @@ header h1 {
   display: none;
 }
 
-
 /* ---------- BUTTONS ---------- */
-
 button,
 .btn,
 .btn-plain,
-.btn-success {
+.btn-success,
+.btn-danger {
   padding: 6px 12px;
   border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
   border: none;
+  transition: opacity 0.2s;
 }
 
 .btn {
@@ -75,6 +74,11 @@ button,
   color: white;
 }
 
+.btn-danger {
+  background: #dc3545;
+  color: white;
+}
+
 .btn-plain {
   background: transparent;
   color: #0078ff;
@@ -83,10 +87,11 @@ button,
 
 button:hover,
 .btn:hover,
-.btn-success:hover {
-  opacity: 0.9;
+.btn-success:hover,
+.btn-danger:hover,
+.btn-plain:hover {
+  opacity: 0.8;
 }
-
 
 /* ---------- GRID LAYOUT ---------- */
 .grid {
@@ -101,7 +106,6 @@ button:hover,
   }
 }
 
-
 /* ---------- CARDS ---------- */
 .card {
   background: white;
@@ -114,9 +118,7 @@ button:hover,
   margin-top: 14px;
 }
 
-
 /* ---------- SEARCH ---------- */
-
 .search {
   display: flex;
   align-items: center;
@@ -138,7 +140,6 @@ button:hover,
   color: #666;
 }
 
-
 /* ---------- CONTROLS ---------- */
 .controls {
   display: flex;
@@ -151,9 +152,7 @@ button:hover,
   padding: 3px 5px;
 }
 
-
 /* ---------- LIST ---------- */
-
 .list {
   display: flex;
   flex-direction: column;
@@ -166,6 +165,9 @@ button:hover,
   border-radius: 6px;
   border: 1px solid #ddd;
   cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .list-item:hover {
@@ -188,11 +190,19 @@ button:hover,
   color: #444;
 }
 
+.tag {
+  font-size: 12px;
+  color: #666;
+  margin-top: 2px;
+}
 
 /* ---------- RIGHT PANE ---------- */
-
 #right-pane {
   min-height: 450px;
+}
+
+#right-content {
+  margin-top: 20px;
 }
 
 .divider {
@@ -201,6 +211,60 @@ button:hover,
   margin: 10px 0;
 }
 
+/* ---------- TRANSACTION UI ---------- */
+.tx {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background: #fafafa;
+  border-radius: 6px;
+  border: 1px solid #eee;
+}
+
+.amount {
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.green { color: #28a745; }
+.red { color: #dc3545; }
+
+.note {
+  color: #666;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.date {
+  color: #888;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.empty {
+  text-align: center;
+  color: #999;
+  font-style: italic;
+  padding: 20px;
+}
+
+/* ---------- FORMS ---------- */
+input, textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-top: 4px;
+  box-sizing: border-box;
+}
+
+label {
+  display: block;
+  margin-top: 12px;
+  font-weight: 600;
+  color: #555;
+}
 
 /* ---------- MUTED TEXT ---------- */
 .muted {
@@ -223,11 +287,20 @@ button:hover,
   margin-bottom: 4px;
 }
 
-
 /* ---------- FOOTER ---------- */
 footer {
   text-align: center;
   color: #666;
   margin-top: 30px;
   font-size: 14px;
+}
+
+/* ---------- FLEX UTILS ---------- */
+.flex {
+  display: flex;
+}
+
+.between {
+  justify-content: space-between;
+  align-items: center;
 }
