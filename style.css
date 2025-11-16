@@ -479,11 +479,19 @@ form label {
   color: #495057;
 }
 
-form .form-actions {
+.required {
+  color: #dc3545;
+}
+
+.form-actions {
   display: flex;
   gap: 12px;
   margin-top: 20px;
   justify-content: flex-end;
+}
+
+.flex-1 {
+  flex: 1;
 }
 
 .date-input {
@@ -497,6 +505,107 @@ form .form-actions {
   transform: translateY(-50%);
   color: #6c757d;
   pointer-events: none;
+}
+
+.tx-form {
+  margin-top: 20px;
+  padding: 20px;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+}
+
+.tx-form h4 {
+  margin-bottom: 16px;
+  color: #495057;
+}
+
+/* ---------- CUSTOMER HEADER & BALANCE ---------- */
+.customer-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.customer-header h3 i {
+  color: #0078ff;
+}
+
+.address {
+  margin-top: 4px;
+  font-size: 14px;
+}
+
+.balance-block {
+  margin: 16px 0;
+  text-align: center;
+}
+
+.balance-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 8px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.get-balance {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.give-balance {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.settled-balance {
+  background: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
+
+.balance-label {
+  font-size: 14px;
+  font-weight: 500;
+  margin-left: 8px;
+}
+
+.action-buttons {
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.action-buttons button {
+  flex: 1;
+  min-width: 80px;
+  justify-content: center;
+}
+
+.margin-top-16 {
+  margin-top: 16px;
+}
+
+.wrap {
+  flex-wrap: wrap;
+}
+
+.gap-8 {
+  gap: 8px;
+}
+
+/* ---------- TRANSACTIONS SECTION ---------- */
+.transactions-section {
+  margin-top: 20px;
+}
+
+.transactions-section .muted-block {
+  margin-bottom: 12px;
 }
 
 /* ---------- MUTED TEXT ---------- */
@@ -540,4 +649,5 @@ footer {
   .list-item { flex-direction: column; align-items: flex-start; gap: 8px; }
   .tx { flex-direction: column; align-items: flex-start; gap: 8px; }
   .tx-right { align-self: flex-end; }
+  .action-buttons { flex-direction: column; }
 }
