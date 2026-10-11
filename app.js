@@ -32,6 +32,24 @@ function fmtDate(d){
     return d; 
   } 
 }
+function escapeHTML(v){return String(v ?? '').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function localDateTimeValue(value = new Date()) {
+  const d = new Date(value);
+  if (!Number.isFinite(d.getTime())) return '';
+  const z = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}`;
+}
+function txTime(t){const d=new Date(t.date || t.createdAt || 0);return Number.isFinite(d.getTime())?d.getTime():0;}
+function txDelta(t){return (t.type==='given'?1:-1)*Number(t.amount||0);}
+function dayKey(t){const d=new Date(t.date);return Number.isFinite(d.getTime())?`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`:'Unknown date';}
+let activeCustomerId=null;
+let txSearchText='';
+function refreshActiveCustomer(){
+ if(!activeCustomerId || !$('#cust-balance-block'))return;
+ const c=localCustomers.find(x=>x.id===activeCustomerId);
+ if(c)openCustomerUI(c,localCustomers,localTransactions);
+ else {activeCustomerId=null;rightContent.innerHTML='';rightDefault.style.display='';}
+}
 function saveLocal(key, v){ localStorage.setItem(key, JSON.stringify(v)); }
 function loadLocal(key, fallback){ try{return JSON.parse(localStorage.getItem(key))||fallback;}catch{return fallback;} }
 
@@ -177,6 +195,7 @@ function subscribeToUserData(uid){
     localCustomers = arr;
     saveLocal(LOCAL_CUSTOMERS, localCustomers);
     renderCustomers(localCustomers);
+    refreshActiveCustomer();
   }, err => console.error('customers snapshot error', err));
   unsubTransactions = txRef.onSnapshot(snapshot => {
     const arr = [];
@@ -189,14 +208,15 @@ function subscribeToUserData(uid){
     localTransactions = arr;
     saveLocal(LOCAL_TRANSACTIONS, localTransactions);
     renderCustomers(localCustomers);
+    refreshActiveCustomer();
   }, err => console.error('transactions snapshot error', err));
 }
 
 async function syncLocalToCloudAndReload(){
   if(!currentUser) return;
-  const uid = currentUser.uid;
-  const cusCol = db.collection('users').doc(uid).collection('customers');
-  const txCol = db.collection('users').doc(uid).collection('transactions');
+  const userId = currentUser.uid;
+  const cusCol = db.collection('users').doc(userId).collection('customers');
+  const txCol = db.collection('users').doc(userId).collection('transactions');
   const [cloudCustSnap, cloudTxSnap] = await Promise.all([cusCol.get(), txCol.get()]);
   const cloudCustIds = new Set(cloudCustSnap.docs.map(d => d.id));
   const cloudTxIds = new Set(cloudTxSnap.docs.map(d => d.id));
@@ -257,9 +277,11 @@ async function deleteCustomerCloud(customerId){
 async function saveTransactionToCloud(tx){
   if(!currentUser){
     if(!tx.id) tx.id = uid();
-    localTransactions.unshift(tx);
+    const idx=localTransactions.findIndex(t=>t.id===tx.id);
+    if(idx>=0)localTransactions[idx]=tx;else localTransactions.unshift(tx);
     saveLocal(LOCAL_TRANSACTIONS, localTransactions);
     renderFromLocalCache();
+    refreshActiveCustomer();
     return;
   }
   const docRef = db.collection('users').doc(currentUser.uid).collection('transactions').doc(tx.id || uid());
@@ -273,6 +295,7 @@ async function deleteTransactionCloud(txId){
     localTransactions = localTransactions.filter(t => t.id !== txId);
     saveLocal(LOCAL_TRANSACTIONS, localTransactions);
     renderFromLocalCache();
+    refreshActiveCustomer();
     return;
   }
   await db.collection('users').doc(currentUser.uid).collection('transactions').doc(txId).delete();
@@ -325,8 +348,8 @@ function renderCustomers(customersArr){
     const tagClass = bal > 0 ? 'get-tag' : bal < 0 ? 'give-tag' : 'settled-tag';
     item.innerHTML = `
       <div class="left">
-        <div class="customer-name">${c.name || ''}</div>
-        <div class="customer-phone">${c.phone || ''}</div>
+        <div class="customer-name">${escapeHTML(c.name)}</div>
+        <div class="customer-phone">${escapeHTML(c.phone)}</div>
       </div>
       <div class="right">
         <div class="customer-balance">${fmtMoney(Math.abs(bal))}</div>
@@ -350,86 +373,33 @@ function renderFromLocalCache(){
   localCustomers = loadLocal(LOCAL_CUSTOMERS, []);
   localTransactions = loadLocal(LOCAL_TRANSACTIONS, []);
   renderCustomers(localCustomers);
+  refreshActiveCustomer();
 }
 
-function openCustomerUI(customer, customersArr, transactionsArr){
-  rightDefault.style.display = 'none';
-  rightContent.innerHTML = `
-    <div class="customer-header">
-      <div class="flex between">
-        <div>
-          <h3><i class="fas fa-user"></i> ${customer.name}</h3>
-          <div class="muted small">${customer.phone || ''}</div>
-          ${customer.address ? `<div class="address muted">${customer.address}</div>` : ''}
-        </div>
-        <button id="back-btn" class="btn plain small"><i class="fas fa-arrow-left"></i> Back</button>
-      </div>
-    </div>
-    <div class="divider"></div>
-    <div id="cust-balance-block" class="balance-block"></div>
-    <div class="action-buttons flex wrap gap-8 margin-top-16">
-      <button id="btn-give" class="btn success"><i class="fas fa-arrow-down"></i> You Gave</button>
-      <button id="btn-get" class="btn plain"><i class="fas fa-arrow-up"></i> You Got</button>
-      <button id="btn-edit-cust" class="btn plain"><i class="fas fa-edit"></i> Edit</button>
-      <button id="btn-delete-cust" class="btn danger"><i class="fas fa-trash"></i> Delete</button>
-    </div>
-    <div class="divider margin-top-16"></div>
-    <div class="transactions-section">
-      <div class="muted-block small">Transactions</div>
-      <div id="tx-list" class="space-y"></div>
-    </div>
-  `;
-  $('#back-btn').addEventListener('click', () => { rightContent.innerHTML=''; rightDefault.style.display=''; });
-  $('#btn-give').addEventListener('click', () => showTxForm(customer, 'given'));
-  $('#btn-get').addEventListener('click', () => showTxForm(customer, 'received'));
-  $('#btn-edit-cust').addEventListener('click', () => showEditCustomerForm(customer));
-  $('#btn-delete-cust').addEventListener('click', async () => {
-    if(!confirm('Delete customer and their transactions?')) return;
-    await deleteCustomerCloud(customer.id);
-  });
-  const custTx = transactionsArr.filter(t => t.customerId === customer.id).sort((a,b) => new Date(b.date) - new Date(a.date));
-  const bal = computeBalances([customer], custTx)[customer.id] || 0;
-  const balClass = bal > 0 ? 'get-balance' : bal < 0 ? 'give-balance' : 'settled-balance';
-  $('#cust-balance-block').innerHTML = `
-    <div class="balance-display ${balClass}">
-      <i class="fas fa-balance-scale"></i>
-      <span>Balance: ${fmtMoney(Math.abs(bal))}</span>
-      <span class="balance-label">(${bal > 0 ? "You'll Get" : bal < 0 ? "You'll Give" : "Settled"})</span>
-    </div>
-  `;
-  const txListEl = $('#tx-list');
-  txListEl.innerHTML = custTx.length === 0 ? '<div class="empty"><i class="fas fa-inbox"></i> No transactions yet</div>' : '';
-  custTx.forEach(t => {
-    const el = document.createElement('div');
-    el.className = 'tx';
-    const typeIcon = t.type === 'given' ? 'fas fa-arrow-down' : 'fas fa-arrow-up';
-    const typeClass = t.type === 'given' ? 'green' : 'red';
-    el.innerHTML = `
-      <div class="left">
-        <div class="amount ${typeClass}">
-          <i class="${typeIcon}"></i> ${t.type === 'given' ? '+' : '-'} ${fmtMoney(t.amount)}
-        </div>
-        <div class="note">${t.note || ''}</div>
-      </div>
-      <div class="tx-right">
-        <div class="date">${fmtDate(t.date)}</div>
-        <div class="tx-actions">
-          <button class="btn plain tiny edit-btn" data-id="${t.id}"><i class="fas fa-edit"></i> Edit</button>
-          <button class="btn danger tiny delete-btn" data-id="${t.id}"><i class="fas fa-trash"></i> Delete</button>
-        </div>
-      </div>
-    `;
-    el.querySelector('.delete-btn').addEventListener('click', async (ev) => {
-      ev.stopPropagation();
-      if(!confirm('Delete transaction?')) return;
-      await deleteTransactionCloud(t.id);
-    });
-    el.querySelector('.edit-btn').addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      showEditTxForm(t);
-    });
-    txListEl.appendChild(el);
-  });
+function openCustomerUI(customer, customersArr=localCustomers, transactionsArr=localTransactions){
+  activeCustomerId=customer.id;
+  rightDefault.style.display='none';
+  const all=transactionsArr.filter(t=>t.customerId===customer.id);
+  const chronological=all.slice().sort((a,b)=>txTime(a)-txTime(b)||String(a.id).localeCompare(String(b.id)));
+  const running=new Map();let balance=0;
+  for(const t of chronological){balance+=txDelta(t);running.set(t.id,balance);}
+  const byDay=new Map();
+  for(const t of chronological){const key=dayKey(t);if(!byDay.has(key))byDay.set(key,{closing:0,given:0,received:0});const d=byDay.get(key);d.closing=running.get(t.id);d[t.type==='given'?'given':'received']+=Number(t.amount||0);}
+  const filtered=chronological.filter(t=>(`${t.note||''} ${t.amount} ${dayKey(t)} ${t.type}`).toLowerCase().includes(txSearchText.toLowerCase()));
+  const dates=[...new Set(filtered.map(dayKey))].sort().reverse();
+  const groups=dates.map(key=>{
+    const items=filtered.filter(t=>dayKey(t)===key).reverse();const day=byDay.get(key);
+    return `<section class="day-group"><div class="day-heading"><strong>${escapeHTML(key)}</strong><span>Day closing: <b>${fmtMoney(day.closing)}</b></span></div><div class="day-subtotals">Gave ${fmtMoney(day.given)} · Got ${fmtMoney(day.received)}</div>${items.map(t=>`<article class="tx"><div class="tx-main"><div class="amount ${t.type==='given'?'green':'red'}">${t.type==='given'?'+':'−'} ${fmtMoney(t.amount)}</div><div class="note">${escapeHTML(t.note||'No note')}</div><div class="date">${fmtDate(t.date)}</div></div><div class="tx-right"><div class="running-label">CLR Balance</div><div class="running-value">${fmtMoney(running.get(t.id))}</div><div class="tx-actions"><button class="btn plain tiny edit-btn" data-id="${escapeHTML(t.id)}">Edit</button><button class="btn danger tiny delete-btn" data-id="${escapeHTML(t.id)}">Delete</button></div></div></article>`).join('')}</section>`;
+  }).join('');
+  rightContent.innerHTML=`<div class="customer-header"><div class="flex between"><div><h3><i class="fas fa-user"></i> ${escapeHTML(customer.name)}</h3><div class="muted small">${escapeHTML(customer.phone||'')}</div><div class="address muted">${escapeHTML(customer.address||'')}</div></div><button id="back-btn" class="btn plain small">Back</button></div></div><div id="cust-balance-block" class="balance-block"><div class="balance-display ${balance>0?'get-balance':balance<0?'give-balance':'settled-balance'}">${fmtMoney(Math.abs(balance))}<span class="balance-label">${balance>0?'You’ll Get':balance<0?'You’ll Give':'Settled'}</span></div></div><div class="action-buttons flex wrap gap-8"><button id="btn-give" class="btn success">+ You Gave</button><button id="btn-get" class="btn primary">− You Got</button><button id="btn-edit-cust" class="btn plain">Edit Customer</button><button id="btn-delete-cust" class="btn danger">Delete</button></div><div id="transaction-editor"></div><div class="transactions-section"><div class="history-header"><h3>Transaction History <span class="muted small">(${all.length})</span></h3><input id="tx-search" aria-label="Search transactions" placeholder="Search notes, amount, date…" value="${escapeHTML(txSearchText)}"></div><div id="tx-list" class="tx-scroll">${groups||'<div class="empty">No matching transactions</div>'}</div></div>`;
+  $('#back-btn').onclick=()=>{activeCustomerId=null;rightContent.innerHTML='';rightDefault.style.display='';};
+  $('#btn-give').onclick=()=>showTxForm(customer,'given');
+  $('#btn-get').onclick=()=>showTxForm(customer,'received');
+  $('#btn-edit-cust').onclick=()=>showEditCustomerForm(customer);
+  $('#btn-delete-cust').onclick=async()=>{if(confirm('Delete customer and all transactions?')){await deleteCustomerCloud(customer.id);refreshActiveCustomer();}};
+  $('#tx-search').oninput=e=>{txSearchText=e.target.value;const pos=e.target.selectionStart;openCustomerUI(customer,localCustomers,localTransactions);const input=$('#tx-search');input.focus();input.setSelectionRange(pos,pos);};
+  $$('#tx-list .edit-btn').forEach(btn=>btn.onclick=()=>{const tx=all.find(t=>t.id===btn.dataset.id);if(tx)showEditTxForm(tx);});
+  $$('#tx-list .delete-btn').forEach(btn=>btn.onclick=async()=>{if(confirm('Delete transaction?'))await deleteTransactionCloud(btn.dataset.id);});
 }
 
 function showAddCustomerUI(prefill = {}){
@@ -463,7 +433,7 @@ function showAddCustomerUI(prefill = {}){
     const phone = $('#cust-phone').value.trim();
     const address = $('#cust-address').value.trim();
     if(!name){ alert('Name required'); return; }
-    const c = { id: prefill.id || uid(), name, phone, address, createdAt: new Date().toISOString() };
+    const c = { id: prefill.id || uid(), name, phone, address, createdAt: prefill.createdAt || new Date().toISOString() };
     await saveCustomerToCloud(c);
     rightContent.innerHTML = '';
     rightDefault.style.display = '';
@@ -474,64 +444,15 @@ function showEditCustomerForm(customer){
   showAddCustomerUI(customer);
 }
 
-function showTxForm(customer, type){
-  const existingForm = $('#tx-form');
-  if (existingForm) existingForm.remove();
-  const typeLabel = type === 'given' ? 'You Gave' : 'You Got';
-  const typeIcon = type === 'given' ? 'fas fa-arrow-down' : 'fas fa-arrow-up';
-  const formHtml = `
-    <div id="tx-form" class="tx-form card">
-      <h4><i class="${typeIcon}"></i> Add ${typeLabel}</h4>
-      <form class="tx-form-inner">
-        <label>Amount <span class="required">*</span></label>
-        <input id="tx-amount" type="number" step="0.01" min="0.01" required />
-        <label>Date <span class="required">*</span></label>
-        <div class="date-input">
-          <input id="tx-date" type="date" required />
-          <i class="fas fa-calendar-alt"></i>
-        </div>
-        <label>Note</label>
-        <input id="tx-note" placeholder="Optional note" />
-        <div class="form-actions">
-          <button type="button" id="cancel-tx" class="btn plain">Cancel</button>
-          <button type="submit" class="btn success">Save Transaction</button>
-        </div>
-      </form>
-    </div>
-  `;
-  rightContent.insertAdjacentHTML('beforeend', formHtml);
-  const today = new Date().toISOString().split('T')[0];
-  $('#tx-date').value = today;
-  $('#cancel-tx').addEventListener('click', () => { const f = $('#tx-form'); if(f) f.remove(); });
-  $('.tx-form-inner').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const amt = Number($('#tx-amount').value);
-    const date = $('#tx-date').value;
-    const note = $('#tx-note').value.trim();
-    if(!amt || amt <= 0){ alert('Enter valid amount'); return; }
-    if(!date){ alert('Select a date'); return; }
-    const tx = { id: uid(), customerId: customer.id, amount: amt, type, note, date: new Date(date).toISOString() };
-    await saveTransactionToCloud(tx);
-    const form = $('#tx-form'); if(form) form.remove();
-  });
+function showTxForm(customer,type,existing=null){
+ const host=$('#transaction-editor');if(!host)return;
+ const stamp=existing?.date||new Date();
+ host.innerHTML=`<div id="tx-form" class="tx-form"><h4>${existing?'Edit':'Add'} ${type==='given'?'You Gave':'You Got'}</h4><form id="tx-form-inner"><label>Amount<input id="tx-amount" type="number" step="0.01" min="0.01" required value="${existing?Number(existing.amount):''}"></label><label>Date and time<input id="tx-date" type="datetime-local" required value="${localDateTimeValue(stamp)}"></label><label>Type<select id="tx-type"><option value="given" ${type==='given'?'selected':''}>You Gave (+)</option><option value="received" ${type==='received'?'selected':''}>You Got (−)</option></select></label><label>Note<input id="tx-note" maxlength="300" placeholder="Optional note" value="${escapeHTML(existing?.note||'')}"></label><div class="form-actions"><button type="button" id="cancel-tx" class="btn plain">Cancel</button><button type="submit" class="btn success">${existing?'Save Changes':'Save Transaction'}</button></div></form></div>`;
+ $('#cancel-tx').onclick=()=>host.innerHTML='';
+ $('#tx-form-inner').onsubmit=async e=>{e.preventDefault();const amount=Number($('#tx-amount').value),date=new Date($('#tx-date').value);if(!Number.isFinite(amount)||amount<=0||!Number.isFinite(date.getTime()))return alert('Enter a valid amount and date/time.');const btn=$('#tx-form-inner button[type=submit]');btn.disabled=true;const tx={...(existing||{}),id:existing?.id||uid(),customerId:customer.id,amount,type:$('#tx-type').value,note:$('#tx-note').value.trim(),date:date.toISOString(),createdAt:existing?.createdAt||new Date().toISOString()};try{await saveTransactionToCloud(tx);refreshActiveCustomer();}catch(err){btn.disabled=false;alert('Could not save transaction: '+err.message);}};
+ $('#tx-amount').focus();
 }
-
-function showEditTxForm(tx){
-  const newNote = prompt('Edit note', tx.note || '');
-  if(newNote === null) return;
-  const newAmtStr = prompt('Edit amount', tx.amount);
-  if(newAmtStr === null) return;
-  const newAmt = Number(newAmtStr);
-  if(isNaN(newAmt) || newAmt <= 0){ alert('Invalid amount'); return; }
-  const newDateStr = prompt('Edit date (YYYY-MM-DD)', new Date(tx.date).toISOString().split('T')[0]);
-  if(newDateStr === null) return;
-  const newDate = new Date(newDateStr);
-  if(isNaN(newDate.getTime())){ alert('Invalid date'); return; }
-  tx.note = newNote.trim();
-  tx.amount = newAmt;
-  tx.date = newDate.toISOString();
-  saveTransactionToCloud(tx);
-}
+function showEditTxForm(tx){const customer=localCustomers.find(c=>c.id===tx.customerId);if(customer)showTxForm(customer,tx.type,tx);}
 
 exportJsonBtn.addEventListener('click', () => {
   const data = { customers: loadLocal(LOCAL_CUSTOMERS, []), transactions: loadLocal(LOCAL_TRANSACTIONS, []) };
